@@ -6,7 +6,7 @@
  */
 #include "print.h"
 
-void debug(const char *format, ...)
+void print(const char *format, ...)
 {
     constexpr size_t bufferSize = 128; // Define a buffer size
     char buffer[bufferSize];
@@ -24,10 +24,12 @@ void debug(const char *format, ...)
     if (len < bufferSize - 1) { // Ensure space for the newline and null terminator
         buffer[len] = '\n';
         buffer[len + 1] = '\0';
-    }
+    }   
 
     // Use the buffer directly for UART transmission
     HAL_UART_Transmit(&huart1, reinterpret_cast<uint8_t *>(buffer), strlen(buffer), HAL_MAX_DELAY);
+
+    memset(buffer,0,bufferSize);
 }
 
 

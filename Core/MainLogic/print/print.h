@@ -19,7 +19,7 @@ extern UART_HandleTypeDef huart1;
 #include <sstream>
 #include "main.h" // Include HAL and peripherals
 
-void debug(const char *format, ...);
+void print(const char *format, ...);
 
 
 #endif /* MAINLOGIC_PRINT_PRINT_H_ */
