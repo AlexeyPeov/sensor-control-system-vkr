@@ -70,8 +70,8 @@ static void MX_USART1_UART_Init(void);
  * @retval int
  */
 #include <stm32_hal_legacy.h>
-#include <stm32f1xx_hal_rcc.h>
 #include <string>
+#include "../../Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_rcc.h"
 
 int main(void)
 {
@@ -89,12 +89,30 @@ int main(void)
 
     while (1)
     {
-
         uint32_t currentTick = HAL_GetTick();
         uint32_t dtInMs = currentTick - previousTick;
         previousTick = currentTick;
 
         mainLogic.update(dtInMs);
+
+
+        // if (USART1->CR1 & USART_CR1_RXNEIE)
+        // {
+        //     print("USART1 RXNE interrupt is enabled.");
+        // }
+        // else
+        // {
+        //     print("USART1 RXNE interrupt is disabled.");
+        // }
+
+        // if (USART1->CR1 & USART_CR1_TCIE)
+        // {
+        //     print("USART1 Transmission Complete interrupt is enabled.");
+        // }
+        // else
+        // {
+        //     print("USART1 Transmission Complete interrupt is disabled.");
+        // }
     }
 }
 
