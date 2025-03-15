@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "screen_i2c/i2c-lcd.h"
+#include "screen_i2c/liquidcrystal_i2c.h"
 
 namespace Screen
 {
