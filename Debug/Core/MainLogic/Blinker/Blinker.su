@@ -1,2 +1,0 @@
-../Core/MainLogic/Blinker/Blinker.cpp:10:1:Blinker::Blinker()	16	static
-../Core/MainLogic/Blinker/Blinker.cpp:19:1:Blinker::~Blinker()	16	static
