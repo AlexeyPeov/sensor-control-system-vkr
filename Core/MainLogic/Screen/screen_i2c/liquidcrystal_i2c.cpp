@@ -9,8 +9,7 @@
 
 
 #include "liquidcrystal_i2c.h"
-
-extern I2C_HandleTypeDef hi2c1;
+#include "../../print/print.h"
 
 uint8_t dpFunction;
 uint8_t dpControl;
@@ -26,6 +25,8 @@ static void ExpanderWrite(uint8_t);
 static void PulseEnable(uint8_t);
 static void DelayInit(void);
 static void DelayUS(uint32_t);
+
+static I2C_HandleTypeDef* hi2c1 = nullptr;
 
 uint8_t special1[8] = {
         0b00000,
@@ -49,8 +50,9 @@ uint8_t special2[8] = {
         0b00000
 };
 
-void HD44780_Init(uint8_t rows)
+void HD44780_Init(uint8_t rows,I2C_HandleTypeDef* hi2c1Ptr)
 {
+  hi2c1 = hi2c1Ptr;
   dpRows = rows;
 
   dpBacklight = LCD_BACKLIGHT;
@@ -216,9 +218,14 @@ void HD44780_LoadCustomCharacter(uint8_t char_num, uint8_t *rows)
   HD44780_CreateSpecialChar(char_num, rows);
 }
 
-void HD44780_PrintStr(const char c[])
+void HD44780_PrintStr(const std::string& str)
 {
-  while(*c) SendChar(*c++);
+	debug("print string: %s, size: %d", str.c_str(), str.size());
+
+	for(auto c : str)
+	{
+		SendChar(c);
+	}
 }
 
 void HD44780_SetBacklight(uint8_t new_val)
@@ -246,7 +253,8 @@ static void SendCommand(uint8_t cmd)
 
 static void SendChar(uint8_t ch)
 {
-  Send(ch, RS);
+	debug("send char %c", ch);
+    Send(ch, RS);
 }
 
 static void Send(uint8_t value, uint8_t mode)
@@ -266,7 +274,16 @@ static void Write4Bits(uint8_t value)
 static void ExpanderWrite(uint8_t _data)
 {
   uint8_t data = _data | dpBacklight;
-  HAL_I2C_Master_Transmit(&hi2c1, DEVICE_ADDR, (uint8_t*)&data, 1, 10);
+  HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(hi2c1, DEVICE_ADDR, (uint8_t*)&data, 1, 10);
+
+  if(ret != HAL_OK)
+  {
+	 debug("HAL_I2C_Master_Transmit not ok, %d, %d", ret, data);
+  }
+//  else
+//  {
+//	  debug("HAL_I2C_Master_Transmit OK, %d, %d", ret, data);
+//  }
 }
 
 static void PulseEnable(uint8_t _data)

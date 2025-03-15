@@ -14,7 +14,7 @@
 
 namespace Screen
 {
-	void init();
+	void init(I2C_HandleTypeDef* hi2c1);
 
 	void print(uint8_t row, uint8_t column, const std::string& data);
 }

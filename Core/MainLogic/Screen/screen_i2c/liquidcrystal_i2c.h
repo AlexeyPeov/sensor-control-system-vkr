@@ -2,6 +2,7 @@
 #define LIQUIDCRYSTAL_I2C_H_
 
 #include "stm32f1xx_hal.h"
+#include <string>
 
 /* Command */
 #define LCD_CLEARDISPLAY 0x01
@@ -49,7 +50,7 @@
 #define ENABLE 0x04
 
 /* Read Write Bit */
-#define RW 0x0
+//#define RW 0x0
 
 /* Register Select Bit */
 #define RS 0x01
@@ -57,7 +58,7 @@
 /* Device I2C Address */
 #define DEVICE_ADDR      0x4E//(0x3F << 1)
 
-void HD44780_Init(uint8_t rows);
+void HD44780_Init(uint8_t rows,I2C_HandleTypeDef* hi2c1);
 void HD44780_Clear();
 void HD44780_Home();
 void HD44780_NoDisplay();
@@ -83,6 +84,6 @@ void HD44780_PrintSpecialChar(uint8_t);
 void HD44780_SetCursor(uint8_t, uint8_t);
 void HD44780_SetBacklight(uint8_t new_val);
 void HD44780_LoadCustomCharacter(uint8_t char_num, uint8_t *rows);
-void HD44780_PrintStr(const char[]);
+void HD44780_PrintStr(const std::string& str);
 
 #endif /* LIQUIDCRYSTAL_I2C_H_ */
