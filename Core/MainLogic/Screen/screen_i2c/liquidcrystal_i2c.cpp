@@ -6,6 +6,8 @@
  */
 
 #include "liquidcrystal_i2c.h"
+#include "../../fn/fn.h"
+
 #include "../../print/print.h"
 
 /* Command */
@@ -77,7 +79,6 @@ static void Write4Bits(uint8_t);
 static void ExpanderWrite(uint8_t);
 static void PulseEnable(uint8_t);
 static void DelayInit(void);
-static void DelayUS(uint32_t);
 
 static I2C_HandleTypeDef* hi2c1 = nullptr;
 
@@ -114,16 +115,16 @@ void HD44780_Init(uint8_t rows, I2C_HandleTypeDef* hi2c1Ptr)
 
     /* 4bit Mode */
     Write4Bits(0x03 << 4);
-    DelayUS(4500);
+    fn::DelayMicro(4500);
 
     Write4Bits(0x03 << 4);
-    DelayUS(4500);
+    fn::DelayMicro(4500);
 
     Write4Bits(0x03 << 4);
-    DelayUS(4500);
+    fn::DelayMicro(4500);
 
     Write4Bits(0x02 << 4);
-    DelayUS(100);
+    fn::DelayMicro(100);
 
     /* Display Control */
     SendCommand(LCD_FUNCTIONSET | dpFunction);
@@ -135,7 +136,7 @@ void HD44780_Init(uint8_t rows, I2C_HandleTypeDef* hi2c1Ptr)
     /* Display Mode */
     dpMode = LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT;
     SendCommand(LCD_ENTRYMODESET | dpMode);
-    DelayUS(4500);
+    fn::DelayMicro(4500);
 
     HD44780_CreateSpecialChar(0, special1);
     HD44780_CreateSpecialChar(1, special2);
@@ -146,13 +147,13 @@ void HD44780_Init(uint8_t rows, I2C_HandleTypeDef* hi2c1Ptr)
 void HD44780_Clear()
 {
     SendCommand(LCD_CLEARDISPLAY);
-    DelayUS(2000);
+    fn::DelayMicro(2000);
 }
 
 void HD44780_Home()
 {
     SendCommand(LCD_RETURNHOME);
-    DelayUS(2000);
+    fn::DelayMicro(2000);
 }
 
 void HD44780_SetCursor(uint8_t col, uint8_t row)
@@ -328,10 +329,10 @@ static void ExpanderWrite(uint8_t _data)
 static void PulseEnable(uint8_t _data)
 {
     ExpanderWrite(_data | ENABLE_CMD);
-    DelayUS(20);
+    fn::DelayMicro(20);
 
     ExpanderWrite(_data & ~ENABLE_CMD);
-    DelayUS(20);
+    fn::DelayMicro(20);
 }
 
 static void DelayInit(void)
@@ -348,16 +349,4 @@ static void DelayInit(void)
     __ASM volatile("NOP");
     __ASM volatile("NOP");
     __ASM volatile("NOP");
-}
-
-static void DelayUS(uint32_t us)
-{
-    uint32_t cycles = (SystemCoreClock / 1000000L) * us;
-    uint32_t start = DWT->CYCCNT;
-    volatile uint32_t cnt;
-
-    do
-    {
-        cnt = DWT->CYCCNT - start;
-    } while (cnt < cycles);
 }

@@ -8,10 +8,10 @@
 #include "MainLogic.h"
 
 MainLogic::MainLogic() :
-    m_displayLine1("Current temp: 15c"), m_displayLine2("Desir   temp: 15c")
-{
-
-    m_currentTemperature = readTemperature();
+    m_displayLine1("Current temp: 15c"), 
+    m_displayLine2("Desir   temp: 15c"),
+    m_temperatureReader(2000, [this](int16_t t){ onTemperatureMeasured(t); })
+{    
 
     setDesiredTemperature(15);
 
@@ -27,22 +27,23 @@ MainLogic::MainLogic() :
 
 MainLogic::~MainLogic()
 {
-    // TODO Auto-generated destructor stub
+
 }
 
 void MainLogic::update(int dtInMs)
 {
-    // debug("dt: %d", dtInMs);
+    m_temperatureReader.update(dtInMs);
+}
 
-    int16_t newTemperature = readTemperature();
-
-    if (m_currentTemperature != newTemperature)
+void MainLogic::onTemperatureMeasured(int16_t t) 
+{
+    if (m_currentTemperature != t)
     {
+        m_currentTemperature = t;
+        
         updateDisplay();
     }
 }
-
-int16_t MainLogic::readTemperature() const { return 15; }
 
 void MainLogic::setDesiredTemperature(int16_t temp)
 {

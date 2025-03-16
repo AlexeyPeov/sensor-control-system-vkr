@@ -13,6 +13,7 @@
 #include "print/print.h"
 #include "Screen/Screen.h"
 #include "Network/Network.h"
+#include "TemperatureReader/TemperatureReader.h"
 
 class MainLogic {
 public:
@@ -23,7 +24,7 @@ public:
 
 private:
 
-	int16_t readTemperature() const;
+	void onTemperatureMeasured(int16_t t);
 
 	void setDesiredTemperature(int16_t temp);
 	
@@ -36,6 +37,8 @@ private:
 
 	int16_t m_currentTemperature = 0;
 	int16_t m_desiredTemperature = 0;
+
+	TemperatureReader m_temperatureReader;
 };
 
 #endif /* MAINLOGIC_MAINLOGIC_H_ */
