@@ -198,7 +198,7 @@ void HD44780_LoadCustomCharacter(uint8_t char_num, uint8_t* rows)
 
 void HD44780_PrintStr(const std::string& str)
 {
-    // print("print string: %s, size: %d", str.c_str(), str.size());
+    // debug("print string: %s, size: %d", str.c_str(), str.size());
 
     for (auto c : str)
     {
@@ -261,7 +261,7 @@ static void ExpanderWrite(uint8_t _data)
 
     if (ret != HAL_OK)
     {
-        print("HAL_I2C_Master_Transmit not ok, %d, %d", ret, data);
+        debug("HAL_I2C_Master_Transmit not ok, %d, %d", ret, data);
     }
     //  else
     //  {

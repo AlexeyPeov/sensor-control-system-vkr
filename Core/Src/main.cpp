@@ -87,32 +87,13 @@ int main(void)
 
     uint32_t previousTick = HAL_GetTick();
 
-    while (1)
+    while (true)
     {
         uint32_t currentTick = HAL_GetTick();
         uint32_t dtInMs = currentTick - previousTick;
         previousTick = currentTick;
 
         mainLogic.update(dtInMs);
-
-
-        // if (USART1->CR1 & USART_CR1_RXNEIE)
-        // {
-        //     print("USART1 RXNE interrupt is enabled.");
-        // }
-        // else
-        // {
-        //     print("USART1 RXNE interrupt is disabled.");
-        // }
-
-        // if (USART1->CR1 & USART_CR1_TCIE)
-        // {
-        //     print("USART1 Transmission Complete interrupt is enabled.");
-        // }
-        // else
-        // {
-        //     print("USART1 Transmission Complete interrupt is disabled.");
-        // }
     }
 }
 

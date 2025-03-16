@@ -6,7 +6,9 @@
  */
 #include "print.h"
 
-void print(const char *format, ...)
+extern UART_HandleTypeDef huart1;
+
+void print(const char* format, ...)
 {
     constexpr size_t bufferSize = 128; // Define a buffer size
     char buffer[bufferSize];
@@ -21,15 +23,19 @@ void print(const char *format, ...)
 
     // Add a newline directly to the buffer
     size_t len = strlen(buffer);
-    if (len < bufferSize - 1) { // Ensure space for the newline and null terminator
+    if (len < bufferSize - 1)
+    { // Ensure space for the newline and null terminator
         buffer[len] = '\n';
         buffer[len + 1] = '\0';
-    }   
+    }
 
     // Use the buffer directly for UART transmission
-    HAL_UART_Transmit(&huart1, reinterpret_cast<uint8_t *>(buffer), strlen(buffer), HAL_MAX_DELAY);
+    HAL_UART_Transmit(
+        &huart1,
+        reinterpret_cast<uint8_t*>(buffer),
+        strlen(buffer),
+        HAL_MAX_DELAY
+    );
 
-    memset(buffer,0,bufferSize);
+    memset(buffer, 0, bufferSize);
 }
-
-

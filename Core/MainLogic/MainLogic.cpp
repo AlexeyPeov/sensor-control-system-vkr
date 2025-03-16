@@ -32,7 +32,7 @@ MainLogic::~MainLogic()
 
 void MainLogic::update(int dtInMs)
 {
-    // print("dt: %d", dtInMs);
+    // debug("dt: %d", dtInMs);
 
     int16_t newTemperature = readTemperature();
 
@@ -46,10 +46,12 @@ int16_t MainLogic::readTemperature() const { return 15; }
 
 void MainLogic::setDesiredTemperature(int16_t temp)
 {
-    if (m_desiredTemperature == temp)
+    if(m_desiredTemperature == temp)
+    {
         return;
+    }
 
-	print("set desired temp: %d", temp);
+	debug("set desired temp: %d", temp);
 
     m_desiredTemperature = temp;
     updateDisplay();

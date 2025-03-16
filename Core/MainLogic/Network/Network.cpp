@@ -17,7 +17,7 @@ Network& Network::instance()
 
 void Network::init(std::function<void(TemperatureMessage)> onTempMsgCb)
 {
-    print("Init Network..");
+    debug("Init Network..");
 
     m_onTemperatureCb = std::move(onTempMsgCb);
 
@@ -29,7 +29,7 @@ void Network::init(std::function<void(TemperatureMessage)> onTempMsgCb)
 
     if (status != HAL_OK)
     {
-        print("HAL_UART_Receive_IT error.. %d", status);
+        debug("HAL_UART_Receive_IT error.. %d", status);
     }
 
     recBufferPtr = m_recBuffer;
@@ -37,7 +37,7 @@ void Network::init(std::function<void(TemperatureMessage)> onTempMsgCb)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
 {
-    print("call HAL_UART_RxCpltCallback..");
+    // debug("call HAL_UART_RxCpltCallback..");
 
     if (huart->Instance == USART1)
     {
@@ -68,7 +68,7 @@ std::string toString(Network::MsgType t)
 
 void Network::receiveMessage(MsgType msg, uint8_t* data, uint8_t size)
 {
-    print("rec msg: %s", toString(msg).c_str());
+    debug("rec msg: %s", toString(msg).c_str());
 
     if (msg == MsgType::SET_TEMPERATURE)
     {

@@ -11,13 +11,18 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <cstdint>
 #include <stdarg.h>
-#include "../../Inc/main.h"
 
-extern UART_HandleTypeDef huart1;
+#include "../Inc/main.h"
 
-#include <sstream>
-#include "main.h" // Include HAL and peripherals
+#define DEBUG_PRINT
+
+#ifdef DEBUG_PRINT
+    #define debug(format, ...) print(format, ##__VA_ARGS__)
+#else
+    #define debug(format, ...) do {} while (0)
+#endif
 
 void print(const char *format, ...);
 
