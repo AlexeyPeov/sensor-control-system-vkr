@@ -1,8 +1,9 @@
 #pragma once
 
 #include <cstdint>
-
 #include <functional>
+
+#include "api/DS18B20.h"
 
 class TemperatureReader
 {

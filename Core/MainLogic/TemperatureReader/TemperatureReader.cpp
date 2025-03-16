@@ -1,7 +1,5 @@
 #include "TemperatureReader.h"
 
-#include "api/DS18B20.h"
-
 #include "../fn/fn.h"
 #include "../print/print.h"
 

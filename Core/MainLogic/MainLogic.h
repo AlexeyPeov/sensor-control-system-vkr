@@ -36,11 +36,13 @@ public:
 
 private:
 
+	void onUartMessage(Network::MsgTypeReceive type, uint8_t* data, uint8_t size);
+
 	void onTemperatureMeasured(int16_t t);
 
 	void onButtonPressed();
 
-	void setDesiredTemperature(int16_t temp);
+	bool setDesiredTemperature(int16_t temp);
 	
 	void updateDisplay();
 

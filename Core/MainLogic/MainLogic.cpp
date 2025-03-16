@@ -18,9 +18,10 @@ MainLogic::MainLogic() :
 
     updateDisplay();
 
-    Network::instance().init([this](Network::TemperatureMessage msg){ 
-        setDesiredTemperature(msg.desiredTemp); 
-    });
+    Network::instance().init(
+        [this](Network::MsgTypeReceive msgT, uint8_t* data, uint8_t size)
+        { onUartMessage(msgT, data, size); }
+    );
 
     m_button.setOnClick(nullptr, [this] { onButtonPressed(); });
 }
@@ -32,9 +33,64 @@ void MainLogic::update(int dtInMs)
     m_temperatureReader.update(dtInMs);
     m_button.update(dtInMs);
 
-    if(m_currentTemperature > m_desiredTemperature)
+    if (m_currentTemperature > m_desiredTemperature)
     {
         // start refrigerating
+    }
+}
+
+void MainLogic::onUartMessage(
+    Network::MsgTypeReceive type,
+    uint8_t* data,
+    uint8_t size
+)
+{
+    if (type == Network::MsgTypeReceive::SET_DESIRED_TEMPERATURE)
+    {
+
+        auto msg = fn::castToStruct<TemperatureMessage>(data, size);
+
+        bool success = setDesiredTemperature(msg.desiredTemp);
+
+        auto msgT = success ? Network::MsgTypeSend::RESULT_OK
+                            : Network::MsgTypeSend::RESULT_FAIL;
+
+        Network::sendMessage(msgT, "setDesiredTemp: %d", m_desiredTemperature);
+    }
+    else if (type == Network::MsgTypeReceive::GET_CURR_TEMPERATURE)
+    {
+        Network::sendMessage(
+            Network::MsgTypeSend::CURR_TEMPERATURE,
+            "%d", m_currentTemperature
+        );
+    }
+    else if (type == Network::MsgTypeReceive::GET_DESIRED_TEMPERATURE)
+    {
+        Network::sendMessage(
+            Network::MsgTypeSend::DESIRED_TEMPERATURE,
+            "%d", m_desiredTemperature
+        );
+    }
+    else if (type == Network::MsgTypeReceive::SET_REFRIGERATOR_ON)
+    {
+        Network::sendMessage(
+            Network::MsgTypeSend::RESULT_OK,
+            ""
+        );
+    }
+    else if (type == Network::MsgTypeReceive::SET_REFRIGERATOR_OFF)
+    {
+        Network::sendMessage(
+            Network::MsgTypeSend::RESULT_OK,
+            ""
+        );
+    }
+    else if (type == Network::MsgTypeReceive::GET_IS_REFRIGERATOR_ON)
+    {
+        Network::sendMessage(
+            Network::MsgTypeSend::IS_REFRIGERATOR_ON,
+            "%d", false
+        );
     }
 }
 
@@ -69,11 +125,11 @@ void MainLogic::onButtonPressed()
     setDesiredTemperature(potentiometerValue);
 }
 
-void MainLogic::setDesiredTemperature(int16_t temp)
+bool MainLogic::setDesiredTemperature(int16_t temp)
 {
     if (m_desiredTemperature == temp)
     {
-        return;
+        return true;
     }
 
     if (!fn::isInRange(temp, constants::tempMin, constants::tempMax))
@@ -85,7 +141,7 @@ void MainLogic::setDesiredTemperature(int16_t temp)
             temp
         );
 
-        return;
+        return false;
         // temp = fn::fitInRange(temp,constants::tempMin, constants::tempMax);
     }
 
@@ -93,6 +149,8 @@ void MainLogic::setDesiredTemperature(int16_t temp)
 
     m_desiredTemperature = temp;
     updateDisplay();
+
+    return true;
 }
 
 void MainLogic::updateDisplay()

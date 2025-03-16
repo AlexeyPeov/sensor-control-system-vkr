@@ -3,42 +3,74 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <queue>
+#include <array>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 
-#include "../print/print.h"
+#include "main.h"
+
+struct TemperatureMessage
+{
+    int16_t desiredTemp = 15;
+};
 
 class Network
 {
-    public:
+public:
     struct constants
     {
-        static constexpr uint8_t bufferSize = 2;
+        static constexpr uint8_t bufferSize = 8;
     };
     
-    enum class MsgType
+    enum class MsgTypeReceive : uint8_t
     {
-        SET_TEMPERATURE,
+        SET_DESIRED_TEMPERATURE = 0x01,
+        GET_CURR_TEMPERATURE,
+        GET_DESIRED_TEMPERATURE,
+        SET_REFRIGERATOR_ON,
+        SET_REFRIGERATOR_OFF,
+        GET_IS_REFRIGERATOR_ON,
     };
-    
-    struct TemperatureMessage
+
+    enum class MsgTypeSend : uint8_t
     {
-        int16_t desiredTemp = 15;
+        LOG_DEBUG = '0',
+        LOG_INFO,
+        LOG_WARN,
+        LOG_ERROR,
+        RESULT_OK = 'T',
+        RESULT_FAIL = 'F',
+
+        CURR_TEMPERATURE = 'C',
+        DESIRED_TEMPERATURE = 'D',
+        IS_REFRIGERATOR_ON = 'R',
     };
     
     static Network& instance();
     
-    void init(std::function<void(TemperatureMessage)> onTempMsgCb = nullptr);
+    void init(
+        std::function<void(
+            MsgTypeReceive msg, 
+            uint8_t* data, 
+            uint8_t size
+        )> onReceiveMsgCb = nullptr
+    );
     
-    void receiveMessage(MsgType msg, uint8_t* data, uint8_t size);
-    
+    void triggerReceiveMsgCb(MsgTypeReceive msg, uint8_t* data, uint8_t size);
+
+    static void sendMessage(MsgTypeSend msgT, const char* format, ...);
+
 private:
     Network();
-    
-    template<typename Struct>
-    Struct receiveTcpMsgStruct(uint8_t *data, uint8_t size);
-    
-private:
-    uint8_t m_recBuffer[constants::bufferSize]{0};
-    
-    std::function<void(TemperatureMessage)> m_onTemperatureCb = nullptr;
 
+private:
+    uint8_t m_recBuffer[constants::bufferSize]{0};    
+    
+    std::function<void(
+        MsgTypeReceive msg, 
+        uint8_t* data, 
+        uint8_t size
+    )> m_onReceiveMsgCb = nullptr;    
 };

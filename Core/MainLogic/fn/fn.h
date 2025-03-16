@@ -30,4 +30,12 @@ namespace fn
 
         return val;
     }
+
+    template <typename Struct>
+    Struct castToStruct(uint8_t* data, uint8_t size)
+    {
+        Struct msg;
+        memcpy(&msg, data, sizeof(Struct));
+        return msg;
+    }
 }

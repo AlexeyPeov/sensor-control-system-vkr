@@ -8,25 +8,22 @@
 #ifndef MAINLOGIC_PRINT_PRINT_H_
 #define MAINLOGIC_PRINT_PRINT_H_
 
-
-#include <string.h>
-#include <stdio.h>
-#include <cstdint>
-#include <stdarg.h>
-
-#include "../Inc/main.h"
+#include "../Network/Network.h"
 
 #define DEBUG_PRINT
 
 #ifdef DEBUG_PRINT
-    #define debug(format, ...) print(format, ##__VA_ARGS__)
+
+#define debug(format, ...)                                                     \
+    Network::sendMessage(Network::MsgTypeSend::LOG_DEBUG, format, ##__VA_ARGS__)
 #else
-    #define debug(format, ...) do {} while (0)
+#define debug(format, ...)                                                     \
+    do                                                                         \
+    {                                                                          \
+    } while (0)
 #endif
 
-#define error(format, ...) print(format, ##__VA_ARGS__)
-
-void print(const char *format, ...);
-
+#define error(format, ...)                                                     \
+    Network::sendMessage(Network::MsgTypeSend::LOG_ERROR, format, ##__VA_ARGS__)
 
 #endif /* MAINLOGIC_PRINT_PRINT_H_ */

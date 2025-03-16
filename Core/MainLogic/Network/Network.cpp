@@ -1,7 +1,8 @@
 #include "Network.h"
+#include "../print/print.h"
 
-#include "../../Drivers\CMSIS\Device\ST\STM32F1xx\Include\stm32f103xb.h"
-#include "../../Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_uart.h"
+#include "stm32f103xb.h"
+#include "stm32f1xx_hal_uart.h"
 
 extern UART_HandleTypeDef huart1;
 
@@ -15,11 +16,13 @@ Network& Network::instance()
     return network;
 }
 
-void Network::init(std::function<void(TemperatureMessage)> onTempMsgCb)
+void Network::init(
+    std::function<void(MsgTypeReceive type, uint8_t* data, uint8_t size)> onMsgCb
+)
 {
     debug("Init Network..");
 
-    m_onTemperatureCb = std::move(onTempMsgCb);
+    m_onReceiveMsgCb = std::move(onMsgCb);
 
     HAL_StatusTypeDef status = HAL_UART_Receive_IT(
         &huart1,
@@ -42,10 +45,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
     if (huart->Instance == USART1)
     {
 
-        Network::instance().receiveMessage(
-            static_cast<Network::MsgType>(recBufferPtr[0]),
-            recBufferPtr,
-            Network::constants::bufferSize
+        Network::instance().triggerReceiveMsgCb(
+            static_cast<Network::MsgTypeReceive>(recBufferPtr[0]),
+            recBufferPtr+1,
+            Network::constants::bufferSize-1
         );
 
         HAL_UART_Receive_IT(
@@ -56,38 +59,63 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef* huart)
     }
 }
 
-std::string toString(Network::MsgType t)
+std::string toString(Network::MsgTypeReceive t)
 {
-    if (t == Network::MsgType::SET_TEMPERATURE)
+    switch (t)
     {
-        return "set temperature";
+    case Network::MsgTypeReceive::SET_DESIRED_TEMPERATURE:
+        return "SET_DESIRED_TEMPERATURE";
+    case Network::MsgTypeReceive::GET_CURR_TEMPERATURE:
+        return "GET_CURR_TEMPERATURE";
+    case Network::MsgTypeReceive::GET_DESIRED_TEMPERATURE:
+        return "GET_DESIRED_TEMPERATURE";
+    case Network::MsgTypeReceive::SET_REFRIGERATOR_ON:
+        return "SET_REFRIGERATOR_ON";
+    case Network::MsgTypeReceive::SET_REFRIGERATOR_OFF:
+        return "SET_REFRIGERATOR_OFF";
+    case Network::MsgTypeReceive::GET_IS_REFRIGERATOR_ON:
+        return "GET_IS_REFRIGERATOR_ON";
     }
 
-    return "";
+    return "unknown";
 }
 
-void Network::receiveMessage(MsgType msg, uint8_t* data, uint8_t size)
+void Network::triggerReceiveMsgCb(MsgTypeReceive msg, uint8_t* data, uint8_t size)
 {
     debug("rec msg: %s", toString(msg).c_str());
 
-    if (msg == MsgType::SET_TEMPERATURE)
+    if (m_onReceiveMsgCb)
     {
-        TemperatureMessage msg = receiveTcpMsgStruct<TemperatureMessage>(
-            m_recBuffer,
-            constants::bufferSize
-        );
-
-        if (m_onTemperatureCb)
-        {
-            m_onTemperatureCb(msg);
-        }
+        m_onReceiveMsgCb(msg, data, size);
     }
 }
 
-template <typename Struct>
-inline Struct Network::receiveTcpMsgStruct(uint8_t* data, uint8_t size)
+void Network::sendMessage(MsgTypeSend msgT, const char* format, ...)
 {
-    Struct msg;
-    memcpy(&msg, data + 1, sizeof(Struct));
-    return msg;
+    constexpr size_t bufferSize = 128;
+    char buffer[bufferSize] = {0};
+
+    va_list args;
+    va_start(args, format);
+
+    vsnprintf(buffer + 1, bufferSize - 2, format, args);
+    va_end(args);
+
+    buffer[0] = static_cast<char>(msgT);
+
+    size_t len = strlen(buffer);
+    if (len < bufferSize - 1)
+    {
+        buffer[len] = '\n';
+        buffer[len + 1] = '\0';
+    }
+
+    HAL_UART_Transmit(
+        &huart1,
+        reinterpret_cast<uint8_t*>(buffer),
+        strlen(buffer),
+        HAL_MAX_DELAY
+    );
+
+    memset(buffer, 0, bufferSize);
 }
