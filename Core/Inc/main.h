@@ -29,7 +29,6 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -58,6 +57,10 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define Button_Pin GPIO_PIN_10
+#define Button_GPIO_Port GPIOB
+#define Temperature_Pin GPIO_PIN_11
+#define Temperature_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
