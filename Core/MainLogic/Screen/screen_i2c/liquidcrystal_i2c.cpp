@@ -8,6 +8,62 @@
 #include "liquidcrystal_i2c.h"
 #include "../../print/print.h"
 
+/* Command */
+constexpr int8_t LCD_CLEARDISPLAY =  0x01;
+constexpr int8_t LCD_RETURNHOME =  0x02;
+constexpr int8_t LCD_ENTRYMODESET =  0x04;
+constexpr int8_t LCD_DISPLAYCONTROL =  0x08;
+constexpr int8_t LCD_CURSORSHIFT =  0x10;
+constexpr int8_t LCD_FUNCTIONSET =  0x20;
+constexpr int8_t LCD_SETCGRAMADDR =  0x40;
+constexpr int8_t LCD_SETDDRAMADDR =  0x80;
+
+/* Entry Mode */
+constexpr int8_t LCD_ENTRYRIGHT = 0x00;
+constexpr int8_t LCD_ENTRYLEFT = 0x02;
+constexpr int8_t LCD_ENTRYSHIFTINCREMENT = 0x01;
+constexpr int8_t LCD_ENTRYSHIFTDECREMENT = 0x00;
+
+/* Display On/Off */
+constexpr int8_t LCD_DISPLAYON = 0x04;
+constexpr int8_t LCD_DISPLAYOFF = 0x00;
+constexpr int8_t LCD_CURSORON = 0x02;
+constexpr int8_t LCD_CURSOROFF = 0x00;
+constexpr int8_t LCD_BLINKON = 0x01;
+constexpr int8_t LCD_BLINKOFF = 0x00;
+
+/* Cursor Shift */
+constexpr int8_t LCD_DISPLAYMOVE = 0x08;
+constexpr int8_t LCD_CURSORMOVE = 0x00;
+constexpr int8_t LCD_MOVERIGHT = 0x04;
+constexpr int8_t LCD_MOVELEFT = 0x00;
+
+/* Function Set */
+constexpr int8_t LCD_8BITMODE = 0x10;
+constexpr int8_t LCD_4BITMODE = 0x00;
+constexpr int8_t LCD_2LINE = 0x08;
+constexpr int8_t LCD_1LINE = 0x00;
+constexpr int8_t LCD_5x10DOTS = 0x04;
+constexpr int8_t LCD_5x8DOTS = 0x00;
+
+/* Backlight */
+constexpr int8_t LCD_BACKLIGHT = 0x08;
+constexpr int8_t LCD_NOBACKLIGHT = 0x00;
+
+/* Enable Bit */
+constexpr int8_t ENABLE_CMD = 0x04;
+
+/* Read Write Bit */
+//#define RW 0x0
+
+/* Register Select Bit */
+constexpr int8_t RS = 0x01;
+
+/* Device I2C Address */
+constexpr int8_t DEVICE_ADDR = 0x4E;
+
+
+
 uint8_t dpFunction;
 uint8_t dpControl;
 uint8_t dpMode;
@@ -271,10 +327,10 @@ static void ExpanderWrite(uint8_t _data)
 
 static void PulseEnable(uint8_t _data)
 {
-    ExpanderWrite(_data | ENABLE);
+    ExpanderWrite(_data | ENABLE_CMD);
     DelayUS(20);
 
-    ExpanderWrite(_data & ~ENABLE);
+    ExpanderWrite(_data & ~ENABLE_CMD);
     DelayUS(20);
 }
 
