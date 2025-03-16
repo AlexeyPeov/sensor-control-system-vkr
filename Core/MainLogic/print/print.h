@@ -24,6 +24,8 @@
     #define debug(format, ...) do {} while (0)
 #endif
 
+#define error(format, ...) print(format, ##__VA_ARGS__)
+
 void print(const char *format, ...);
 
 

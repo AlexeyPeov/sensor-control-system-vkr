@@ -14,6 +14,18 @@
 #include "Screen/Screen.h"
 #include "Network/Network.h"
 #include "TemperatureReader/TemperatureReader.h"
+#include "Potentiometer/Potentiometer.h"
+#include "Button/Button.h"
+
+namespace constants
+{
+	constexpr int16_t tempMin = 10;
+	constexpr int16_t tempMax = 10;
+	constexpr int16_t initialDesiredTemp = 15;
+	constexpr int16_t refrigerantInitThreshold = 2;
+	
+} // namespace constants
+
 
 class MainLogic {
 public:
@@ -25,6 +37,8 @@ public:
 private:
 
 	void onTemperatureMeasured(int16_t t);
+
+	void onButtonPressed();
 
 	void setDesiredTemperature(int16_t temp);
 	
@@ -39,6 +53,8 @@ private:
 	int16_t m_desiredTemperature = 0;
 
 	TemperatureReader m_temperatureReader;
+	Potentiometer m_potentiometer;
+	Button m_button;
 };
 
 #endif /* MAINLOGIC_MAINLOGIC_H_ */
