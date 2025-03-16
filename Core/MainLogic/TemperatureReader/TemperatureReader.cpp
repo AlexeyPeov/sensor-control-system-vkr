@@ -12,23 +12,37 @@ TemperatureReader::TemperatureReader(
 {
     __temperature_reader_port_b11_init();
 
-    uint8_t status = ds18b20_init(SKIP_ROM);
+    DS18B20_Status status = ds18b20_init(SKIP_ROM);
 
     setTempMeasureDelay(tempMeasureDelayInMs);
 
     debug("Temperature reader status: %d\r\n", status);
 
-    if(status == 0)
+    if(status == DS18B20_Status::DS18B20_OK)
     {
         m_state = State::START;
+    }
+    else
+    {
+        handleError(status);
     }
 }
 
 void TemperatureReader::update(int dtInMs)
 {
-    if (m_state == State::START)
+    if (m_state == State::NONE)
     {
-        ds18b20_MeasureTemperCmd(SKIP_ROM, 0);
+
+    }
+    else if (m_state == State::START)
+    {
+        DS18B20_Status status = ds18b20_MeasureTemperCmd(SKIP_ROM, 0);
+
+        if(status != DS18B20_Status::DS18B20_OK)
+        {
+            handleError(status);
+            return;
+        }
 
         m_timer = 0;
 
@@ -47,7 +61,13 @@ void TemperatureReader::update(int dtInMs)
     {
         uint8_t m_buffer[8] { 0 };
 
-        ds18b20_ReadStratcpad(SKIP_ROM, m_buffer, 0);
+        DS18B20_Status status = ds18b20_ReadStratcpad(SKIP_ROM, m_buffer, 0);
+
+        if(status != DS18B20_Status::DS18B20_OK)
+        {
+            handleError(status);
+            return;
+        }
 
         auto val = static_cast<uint16_t>(m_buffer[1]);
 
@@ -74,4 +94,10 @@ void TemperatureReader::setOnTempMeasuredCb(
 )
 {
     m_onTempMeasuredCb = std::move(onTempMeasuredCb);
+}
+
+void TemperatureReader::handleError(DS18B20_Status status) 
+{
+    m_state = State::NONE;        
+    error("TemperatureReader error %s", toString(status).c_str());
 }

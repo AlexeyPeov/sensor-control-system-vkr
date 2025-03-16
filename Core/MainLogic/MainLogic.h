@@ -20,7 +20,7 @@
 namespace constants
 {
 	constexpr int16_t tempMin = 10;
-	constexpr int16_t tempMax = 10;
+	constexpr int16_t tempMax = 35;
 	constexpr int16_t initialDesiredTemp = 15;
 	constexpr int16_t refrigerantInitThreshold = 2;
 	

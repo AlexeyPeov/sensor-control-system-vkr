@@ -28,6 +28,8 @@ private:
         READY
     };
 
+    void handleError(DS18B20_Status status);
+
 private:
     int m_timer = 0;
     int m_delayTriggerTime = 0;

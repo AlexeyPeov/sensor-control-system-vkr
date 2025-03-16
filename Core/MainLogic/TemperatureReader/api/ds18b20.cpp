@@ -59,10 +59,10 @@ void ds18b20_WriteByte(uint8_t dt)
     }
 }
 
-uint8_t ds18b20_init(uint8_t mode)
+DS18B20_Status ds18b20_init(uint8_t mode)
 {
     if (ds18b20_Reset())
-        return 1;
+        return DS18B20_Status::DS18B20_ERROR_RESET;
     if (mode == SKIP_ROM)
     {
         // SKIP ROM
@@ -76,35 +76,72 @@ uint8_t ds18b20_init(uint8_t mode)
         // Resolution 12 bit
         ds18b20_WriteByte(RESOLUTION_12BIT);
     }
-    return 0;
+    return DS18B20_Status::DS18B20_OK;
 }
 
-void ds18b20_MeasureTemperCmd(uint8_t mode, uint8_t DevNum)
+DS18B20_Status ds18b20_MeasureTemperCmd(uint8_t mode, uint8_t DevNum)
 {
-    ds18b20_Reset();
+    if (ds18b20_Reset())
+    {
+        return DS18B20_Status::DS18B20_ERROR_RESET;
+    }
+
     if (mode == SKIP_ROM)
     {
-        // SKIP ROM
         ds18b20_WriteByte(0xCC);
+        if (ds18b20_ReadByte() != 0xCC)
+        {
+            return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
+        }
     }
+
     ds18b20_WriteByte(0x44);
+    if (ds18b20_ReadByte() != 0x44)
+    {
+        return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
+    }
+
+    return DS18B20_Status::DS18B20_OK;
 }
-void ds18b20_ReadStratcpad(uint8_t mode, uint8_t* Data, uint8_t DevNum)
+
+DS18B20_Status
+ds18b20_ReadStratcpad(uint8_t mode, uint8_t* Data, uint8_t DevNum)
 {
     uint8_t i;
-    ds18b20_Reset();
+
+    if (ds18b20_Reset())
+    {
+        return DS18B20_Status::DS18B20_ERROR_RESET;
+    }
+
     if (mode == SKIP_ROM)
     {
-        // SKIP ROM
         ds18b20_WriteByte(0xCC);
+        if (ds18b20_ReadByte() != 0xCC)
+        {
+            return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
+        }
     }
-    // READ SCRATCHPAD
+
     ds18b20_WriteByte(0xBE);
+    if (ds18b20_ReadByte() != 0xBE)
+    {
+        return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
+    }
+
+    // Read the scratchpad (8 bytes)
     for (i = 0; i < 8; i++)
     {
         Data[i] = ds18b20_ReadByte();
+        if (Data[i] == 0xFF)
+        {
+            return DS18B20_Status::DS18B20_ERROR_TIMEOUT;
+        }
     }
+
+    return DS18B20_Status::DS18B20_OK;
 }
+
 uint8_t ds18b20_GetSign(uint16_t dt)
 {
 
@@ -116,8 +153,25 @@ uint8_t ds18b20_GetSign(uint16_t dt)
 float ds18b20_Convert(uint16_t dt)
 {
     float t;
-    t = (float)((dt & 0x07FF) >> 4);    
+    t = (float)((dt & 0x07FF) >> 4);
     t += (float)(dt & 0x000F) / 16.0f;
-    
+
     return t;
+}
+
+std::string toString(DS18B20_Status status)
+{
+    switch (status)
+    {
+        case DS18B20_Status::DS18B20_OK:
+            return "DS18B20_OK";
+        case DS18B20_Status::DS18B20_ERROR_RESET:
+            return "DS18B20_ERROR_RESET";
+        case DS18B20_Status::DS18B20_ERROR_COMMUNICATION:
+            return "DS18B20_ERROR_COMMUNICATION";
+        case DS18B20_Status::DS18B20_ERROR_TIMEOUT:
+            return "DS18B20_ERROR_TIMEOUT";
+    }
+
+    return "";
 }
