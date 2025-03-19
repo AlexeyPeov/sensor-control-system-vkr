@@ -93,7 +93,7 @@ void MainLogic::update(int dtInMs)
     }
 
     // m_desiredTemperature = m_potentiometerValueRead;
-    debug("updateDisplay from update, prev: %d, curr: %d", prevPotentiometerValue, m_potentiometerValueRead);
+    debug("potentiometer value update prev: %d, curr: %d", prevPotentiometerValue, m_potentiometerValueRead);
     updateDisplay();
 }
 
@@ -149,7 +149,7 @@ void MainLogic::onUartMessage(
     else if (type == Network::MsgTypeReceive::REFRIGERATOR_MANUAL_CONTROL_OFF)
     {
         Refrigerator::instance().disableManualControl();
-        
+
         Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
     }
     else if (type == Network::MsgTypeReceive::GET_IS_REFRIGERATOR_ON)
@@ -227,10 +227,12 @@ bool MainLogic::setDesiredTemperature(int16_t temp)
 
 void MainLogic::updateDisplay()
 {
+    debug("update display");
+
     snprintf(
         &m_displayLine1[0],
         m_displayLine1.size(),
-        "cur t: %dc on:%d",
+        "cur t:%dc  on:%d",
         m_currentTemperature,
         Refrigerator::instance().isOn()
     );
@@ -240,7 +242,7 @@ void MainLogic::updateDisplay()
         snprintf(
             &m_displayLine2[0],
             m_displayLine2.size(),
-            "trg t: %dc",
+            "trg t:%dc        ",
             m_desiredTemperature
         );
     }
@@ -249,13 +251,13 @@ void MainLogic::updateDisplay()
         snprintf(
             &m_displayLine2[0],
             m_displayLine2.size(),
-            "trg t: *%dc, %dc",
-            m_potentiometerValueRead,
-            m_desiredTemperature
+            "trg t:%dc, *%dc ",
+            m_desiredTemperature,
+            m_potentiometerValueRead
         );
     }
 
-    Screen::clear();
+    // Screen::clear();
     Screen::print(0, 0, m_displayLine1.c_str());
     Screen::print(0, 1, m_displayLine2.c_str());
 }
