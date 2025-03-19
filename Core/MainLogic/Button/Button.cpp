@@ -35,7 +35,7 @@ static bool digitalRead(GPIO_TypeDef* buttonPort, uint16_t buttonPin)
 
     bool read = state == GPIO_PinState::GPIO_PIN_RESET;
 
-    debug("Button read: %d", read);
+    // debug("Button read: %d", read);
 
     return read;
 }

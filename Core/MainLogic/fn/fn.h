@@ -14,13 +14,9 @@ namespace fn
 
     inline bool isInRange(int val, int a, int b)
     {
-        if(val > a || val < b)
-        {
-            return false;
-        }
-        
-        return true;
+        return (val >= a && val <= b);
     }
+    
 
     template<typename T>
     T fitInRange(T val, T min, T max)

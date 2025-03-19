@@ -16,13 +16,14 @@
 #include "TemperatureReader/TemperatureReader.h"
 #include "Potentiometer/Potentiometer.h"
 #include "Button/Button.h"
+#include "Refrigerator/Refrigerator.h"
 
 namespace constants
 {
 	constexpr int16_t tempMin = 10;
 	constexpr int16_t tempMax = 35;
-	constexpr int16_t initialDesiredTemp = 15;
-	constexpr int16_t refrigerantInitThreshold = 2;
+	constexpr int16_t initialDesiredTemp = 25;
+	constexpr int16_t refrigerantInitThresholdDeg = 2;
 	
 } // namespace constants
 
@@ -51,12 +52,15 @@ private:
 	std::string m_displayLine1;
 	std::string m_displayLine2;
 
-	int16_t m_currentTemperature = 0;
+	int16_t m_currentTemperature = 1;
 	int16_t m_desiredTemperature = 0;
+	int16_t m_potentiometerValueRead = 0;
 
 	TemperatureReader m_temperatureReader;
 	Potentiometer m_potentiometer;
 	Button m_button;
+
+	bool m_desiredTempChangeApplied = false;
 };
 
 #endif /* MAINLOGIC_MAINLOGIC_H_ */

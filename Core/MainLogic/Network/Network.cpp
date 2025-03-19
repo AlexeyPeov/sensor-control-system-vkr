@@ -69,10 +69,12 @@ std::string toString(Network::MsgTypeReceive t)
         return "GET_CURR_TEMPERATURE";
     case Network::MsgTypeReceive::GET_DESIRED_TEMPERATURE:
         return "GET_DESIRED_TEMPERATURE";
-    case Network::MsgTypeReceive::SET_REFRIGERATOR_ON:
-        return "SET_REFRIGERATOR_ON";
-    case Network::MsgTypeReceive::SET_REFRIGERATOR_OFF:
-        return "SET_REFRIGERATOR_OFF";
+    case Network::MsgTypeReceive::KEEP_REFRIGERATOR_ON:
+        return "KEEP_REFRIGERATOR_ON";
+    case Network::MsgTypeReceive::KEEP_REFRIGERATOR_OFF:
+        return "KEEP_REFRIGERATOR_OFF";
+    case Network::MsgTypeReceive::REFRIGERATOR_MANUAL_CONTROL_OFF:
+        return "REFRIGERATOR_MANUAL_CONTROL_OFF";
     case Network::MsgTypeReceive::GET_IS_REFRIGERATOR_ON:
         return "GET_IS_REFRIGERATOR_ON";
     }

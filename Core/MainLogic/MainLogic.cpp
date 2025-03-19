@@ -33,10 +33,68 @@ void MainLogic::update(int dtInMs)
     m_temperatureReader.update(dtInMs);
     m_button.update(dtInMs);
 
-    if (m_currentTemperature > m_desiredTemperature)
-    {
-        // start refrigerating
+    auto& refrigerator = Refrigerator::instance();
+
+    int16_t desTemp = m_desiredTemperature
+        + constants::refrigerantInitThresholdDeg;
+
+    if(m_temperatureReader.isEmulatorMode() && refrigerator.isOn())
+    {               
+        static uint16_t timer = 0;
+
+        timer += dtInMs;
+
+        if(timer > 1000)
+        {
+            timer = 0;
+            m_temperatureReader.decreaseEmulatedTemperatureValBy(1);
+        }
+
     }
+
+    if(!refrigerator.isManualControl())
+    {
+        if (m_currentTemperature > desTemp && !refrigerator.isOn())
+        {        
+            refrigerator.setOn();
+            updateDisplay();
+        }
+    
+        if (m_currentTemperature <= m_desiredTemperature && refrigerator.isOn())
+        {
+            refrigerator.setOff();
+            updateDisplay();
+        }
+    }
+
+
+    int16_t prevPotentiometerValue = m_potentiometerValueRead;
+
+    m_potentiometerValueRead = m_potentiometer.getValueMapped(
+        constants::tempMin,
+        constants::tempMax
+    );
+
+    if (m_potentiometerValueRead == constants::tempMin - 1)
+    {
+        return;
+    }
+
+    if (prevPotentiometerValue == m_potentiometerValueRead)
+    {
+        return;
+    }
+
+    m_desiredTempChangeApplied = false;
+
+    if (m_potentiometerValueRead == m_desiredTemperature)
+    {
+        m_desiredTempChangeApplied = true;
+    }
+
+    // m_desiredTemperature = m_potentiometerValueRead;
+    debug("updateDisplay from update, prev: %d, curr: %d", prevPotentiometerValue, m_potentiometerValueRead);
+    updateDisplay();
 }
 
 void MainLogic::onUartMessage(
@@ -61,41 +119,53 @@ void MainLogic::onUartMessage(
     {
         Network::sendMessage(
             Network::MsgTypeSend::CURR_TEMPERATURE,
-            "%d", m_currentTemperature
+            "%d",
+            m_currentTemperature
         );
     }
     else if (type == Network::MsgTypeReceive::GET_DESIRED_TEMPERATURE)
     {
         Network::sendMessage(
             Network::MsgTypeSend::DESIRED_TEMPERATURE,
-            "%d", m_desiredTemperature
+            "%d",
+            m_desiredTemperature
         );
     }
-    else if (type == Network::MsgTypeReceive::SET_REFRIGERATOR_ON)
+    else if (type == Network::MsgTypeReceive::KEEP_REFRIGERATOR_ON)
     {
-        Network::sendMessage(
-            Network::MsgTypeSend::RESULT_OK,
-            ""
-        );
+        bool alwaysOn = true;
+        Refrigerator::instance().enableManualControl(alwaysOn);        
+        updateDisplay();
+        Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
     }
-    else if (type == Network::MsgTypeReceive::SET_REFRIGERATOR_OFF)
+    else if (type == Network::MsgTypeReceive::KEEP_REFRIGERATOR_OFF)
     {
-        Network::sendMessage(
-            Network::MsgTypeSend::RESULT_OK,
-            ""
-        );
+        bool alwaysOn = false;
+        Refrigerator::instance().enableManualControl(alwaysOn);
+        updateDisplay();
+
+        Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
+    }
+    else if (type == Network::MsgTypeReceive::REFRIGERATOR_MANUAL_CONTROL_OFF)
+    {
+        Refrigerator::instance().disableManualControl();
+        
+        Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
     }
     else if (type == Network::MsgTypeReceive::GET_IS_REFRIGERATOR_ON)
     {
         Network::sendMessage(
             Network::MsgTypeSend::IS_REFRIGERATOR_ON,
-            "%d", false
+            "%d",
+            Refrigerator::instance().isOn()
         );
     }
 }
 
 void MainLogic::onTemperatureMeasured(int16_t t)
 {
+    // debug("onTemp measured: %d", t);
+
     if (m_currentTemperature != t)
     {
         m_currentTemperature = t;
@@ -148,6 +218,8 @@ bool MainLogic::setDesiredTemperature(int16_t temp)
     debug("set desired temp: %d", temp);
 
     m_desiredTemperature = temp;
+    m_desiredTempChangeApplied = true;
+
     updateDisplay();
 
     return true;
@@ -158,16 +230,30 @@ void MainLogic::updateDisplay()
     snprintf(
         &m_displayLine1[0],
         m_displayLine1.size(),
-        "Current t: %dc",
-        m_currentTemperature
+        "cur t: %dc on:%d",
+        m_currentTemperature,
+        Refrigerator::instance().isOn()
     );
 
-    snprintf(
-        &m_displayLine2[0],
-        m_displayLine2.size(),
-        "Target  t: %dc",
-        m_desiredTemperature
-    );
+    if (m_desiredTempChangeApplied)
+    {
+        snprintf(
+            &m_displayLine2[0],
+            m_displayLine2.size(),
+            "trg t: %dc",
+            m_desiredTemperature
+        );
+    }
+    else
+    {
+        snprintf(
+            &m_displayLine2[0],
+            m_displayLine2.size(),
+            "trg t: *%dc, %dc",
+            m_potentiometerValueRead,
+            m_desiredTemperature
+        );
+    }
 
     Screen::clear();
     Screen::print(0, 0, m_displayLine1.c_str());

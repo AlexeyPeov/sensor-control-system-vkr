@@ -19,8 +19,19 @@ int16_t Potentiometer::getValueMapped(int min, int max)
     }
     
     constexpr uint32_t ADC_MAX = 4095;
-    uint32_t readValue = HAL_ADC_GetValue(&hadc1);
-    float normalizedValue = static_cast<float>(readValue) / ADC_MAX;
+    
+
+    int sum = 0;
+    const int numSamples = 10;
+
+    for (int i = 0; i < numSamples; i++)
+    {
+        sum += HAL_ADC_GetValue(&hadc1);
+        HAL_Delay(1);
+    }    
+
+
+    float normalizedValue = static_cast<float>(sum / numSamples) / ADC_MAX;
 
     float res = min + (normalizedValue * (max - min));
 
