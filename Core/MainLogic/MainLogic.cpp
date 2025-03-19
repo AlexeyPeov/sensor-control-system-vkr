@@ -227,7 +227,7 @@ bool MainLogic::setDesiredTemperature(int16_t temp)
 
 void MainLogic::updateDisplay()
 {
-    debug("update display");
+    // debug("update display");
 
     snprintf(
         &m_displayLine1[0],
