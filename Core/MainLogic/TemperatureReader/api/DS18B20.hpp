@@ -26,7 +26,7 @@ private:
 
 	GPIO_PinState read_data_pin();
 
-	void start_sensor();
+	bool start_sensor();
 
 	void writeData(uint8_t data);
 	uint8_t read_data();

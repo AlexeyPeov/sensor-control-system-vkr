@@ -1,5 +1,6 @@
 #include "DS18B20.hpp"
 #include "../../fn/fn.h"
+#include "../../print/print.h"
 
 /*
 Constructor for temperature sensor object
@@ -53,17 +54,25 @@ void DS18B20::set_pin_input()
 	return HAL_GPIO_Init(_port, &GPIO_InitStruct);
 }
 
-void DS18B20::start_sensor()
+bool DS18B20::start_sensor()
 {
-	set_pin_output();
-	set_data_pin(false);
+    set_pin_output();
+    set_data_pin(false);
 
-	delay_us(480);
-	set_pin_input();
-	delay_us(80);
-	read_data_pin();
-	delay_us(400);
+    delay_us(480);
+    set_pin_input();
+    delay_us(80);
+
+    // Check for presence pulse
+    if (read_data_pin() == GPIO_PIN_SET) {
+        error("DS18B20::start_sensor: sensor not detected\n");
+        return false;
+    }
+
+    delay_us(400);
+    return true;  
 }
+
 
 void DS18B20::writeData(uint8_t data)
 {
@@ -121,7 +130,8 @@ This functions blocks for around 800ms as it waits for the conversion time!
 */
 bool DS18B20::readCelciusBegin()
 {
-	start_sensor();
+	if(!start_sensor())	
+		return false;
 	HAL_Delay(1);
 	writeData(0xCC);
 	writeData(0x44);
@@ -131,7 +141,8 @@ bool DS18B20::readCelciusBegin()
 
 std::optional<float> DS18B20::readCelciusEnd()
 {
-    start_sensor();
+    if(!start_sensor())	
+		return std::nullopt;
 	writeData(0xCC);
 	writeData(0xBE);
 
@@ -140,7 +151,14 @@ std::optional<float> DS18B20::readCelciusEnd()
 
 	uint16_t temp_com = (temp2 << 8) | temp1;
 
-	return (float)(temp_com / 16.0);
+	float tempRet = (float)(temp_com / 16.0);
+
+	if(tempRet > 50.f)
+	{
+		return std::nullopt;
+	}
+
+	return tempRet;
 }
 
 /*
