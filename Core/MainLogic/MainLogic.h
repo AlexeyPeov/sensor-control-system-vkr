@@ -47,6 +47,8 @@ private:
 	
 	void updateDisplay();
 
+	void updateRefrigerator(bool useThreshold = true);
+
 private:
 
 	std::string m_displayLine1;

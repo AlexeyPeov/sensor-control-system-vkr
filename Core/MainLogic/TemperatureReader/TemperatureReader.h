@@ -18,10 +18,6 @@ public:
 
     void setOnTempMeasuredCb(std::function<void(int16_t t)> onTempMeasuredCb);
 
-    bool isEmulatorMode() const;
-
-    void decreaseEmulatedTemperatureValBy(int16_t val);
-
 private:
     enum class State : uint8_t
     {
@@ -38,8 +34,7 @@ private:
     uint16_t m_delayTriggerTime = 0;
 
     State m_state = State::NONE;
-    int16_t m_emulatedTemperature = 25;
-    int16_t m_emulatedTimer = 0;
+    int16_t m_lastMeasuredTemperature = 25;
 
     std::function<void(int16_t temperature)> m_onTempMeasuredCb = nullptr;
 };

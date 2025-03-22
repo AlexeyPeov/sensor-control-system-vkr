@@ -4,13 +4,17 @@
 #include "stm32f1xx_hal.h"
 #include "stm32f103xb.h"
 #include <stdint.h>
+#include <optional>
 
 class DS18B20
 {
 public:
 	DS18B20(GPIO_TypeDef *port, uint16_t pin);
 
-	float read_temp_celsius();
+	bool readCelciusBegin();
+
+	std::optional<float> readCelciusEnd();
+
 	float read_temp_fahrenheit();
 
 private:

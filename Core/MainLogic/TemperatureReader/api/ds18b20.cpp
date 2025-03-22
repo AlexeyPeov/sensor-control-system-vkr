@@ -119,14 +119,19 @@ Read the current temperature from the sensor.
 This functions blocks for around 800ms as it waits for the conversion time!
 @return Temperature in degrees Celsius
 */
-float DS18B20::read_temp_celsius()
+bool DS18B20::readCelciusBegin()
 {
 	start_sensor();
 	HAL_Delay(1);
 	writeData(0xCC);
 	writeData(0x44);
-	HAL_Delay(800);
-	start_sensor();
+	
+	return true;
+}
+
+std::optional<float> DS18B20::readCelciusEnd()
+{
+    start_sensor();
 	writeData(0xCC);
 	writeData(0xBE);
 
@@ -145,5 +150,5 @@ This functions blocks for around 800ms as it waits for the conversion time!
 */
 float DS18B20::read_temp_fahrenheit()
 {
-	return read_temp_celsius() * 1.8 + 32.0;
+	return readCelciusBegin() * 1.8 + 32.0;
 }

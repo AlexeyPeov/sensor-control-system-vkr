@@ -10,7 +10,7 @@
 
 MainLogic::MainLogic() :
     m_displayLine1("Current temp: 15c"), m_displayLine2("Desir   temp: 15c"),
-    m_temperatureReader(2000, [this](int16_t t) { onTemperatureMeasured(t); }),
+    m_temperatureReader(3000, [this](int16_t t) { onTemperatureMeasured(t); }),
     m_button(Button_GPIO_Port, Button_Pin)
 {
 
@@ -33,40 +33,7 @@ void MainLogic::update(int dtInMs)
     m_temperatureReader.update(dtInMs);
     m_button.update(dtInMs);
 
-    auto& refrigerator = Refrigerator::instance();
-
-    int16_t desTemp = m_desiredTemperature
-        + constants::refrigerantInitThresholdDeg;
-
-    if(m_temperatureReader.isEmulatorMode() && refrigerator.isOn())
-    {               
-        static uint16_t timer = 0;
-
-        timer += dtInMs;
-
-        if(timer > 1000)
-        {
-            timer = 0;
-            m_temperatureReader.decreaseEmulatedTemperatureValBy(1);
-        }
-
-    }
-
-    if(!refrigerator.isManualControl())
-    {
-        if (m_currentTemperature > desTemp && !refrigerator.isOn())
-        {        
-            refrigerator.setOn();
-            updateDisplay();
-        }
-    
-        if (m_currentTemperature <= m_desiredTemperature && refrigerator.isOn())
-        {
-            refrigerator.setOff();
-            updateDisplay();
-        }
-    }
-
+    updateRefrigerator();
 
     int16_t prevPotentiometerValue = m_potentiometerValueRead;
 
@@ -93,7 +60,11 @@ void MainLogic::update(int dtInMs)
     }
 
     // m_desiredTemperature = m_potentiometerValueRead;
-    debug("potentiometer value update prev: %d, curr: %d", prevPotentiometerValue, m_potentiometerValueRead);
+    debug(
+        "potentiometer value update prev: %d, curr: %d",
+        prevPotentiometerValue,
+        m_potentiometerValueRead
+    );
     updateDisplay();
 }
 
@@ -134,7 +105,7 @@ void MainLogic::onUartMessage(
     else if (type == Network::MsgTypeReceive::KEEP_REFRIGERATOR_ON)
     {
         bool alwaysOn = true;
-        Refrigerator::instance().enableManualControl(alwaysOn);        
+        Refrigerator::instance().enableManualControl(alwaysOn);
         updateDisplay();
         Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
     }
@@ -221,6 +192,7 @@ bool MainLogic::setDesiredTemperature(int16_t temp)
     m_desiredTempChangeApplied = true;
 
     updateDisplay();
+    updateRefrigerator(false);
 
     return true;
 }
@@ -260,4 +232,33 @@ void MainLogic::updateDisplay()
     // Screen::clear();
     Screen::print(0, 0, m_displayLine1.c_str());
     Screen::print(0, 1, m_displayLine2.c_str());
+}
+
+void MainLogic::updateRefrigerator(bool useThreshold)
+{
+    auto& refrigerator = Refrigerator::instance();
+
+    if (refrigerator.isManualControl())
+    {
+        return;
+    }
+
+    int16_t desTemp = m_desiredTemperature;
+
+    if(useThreshold)
+    {
+        desTemp += constants::refrigerantInitThresholdDeg;
+    }
+
+    if (m_currentTemperature > desTemp && !refrigerator.isOn())
+    {
+        refrigerator.setOn();
+        updateDisplay();
+    }
+    
+    if (m_currentTemperature < m_desiredTemperature && refrigerator.isOn())
+    {
+        refrigerator.setOff();
+        updateDisplay();
+    }
 }
