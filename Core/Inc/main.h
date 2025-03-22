@@ -59,8 +59,8 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define Button_Pin GPIO_PIN_10
 #define Button_GPIO_Port GPIOB
-#define Temperature_Pin GPIO_PIN_11
-#define Temperature_GPIO_Port GPIOB
+#define TemperatureReader_Pin GPIO_PIN_9
+#define TemperatureReader_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

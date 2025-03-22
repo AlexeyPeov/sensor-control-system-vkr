@@ -19,11 +19,22 @@ struct TemperatureMessage
 class Network
 {
 public:
+
+
     struct constants
     {
         static constexpr uint8_t bufferSize = 8;
     };
     
+    
+    // uart msg состоит из 8и байт, первый байт - тип сообщения.
+
+    // SET_DESIRED_TEMPERATURE: 2й байт отвечает за желаемую температуру
+    // пример выставления желаемой температуры 22c 
+    // [ 0x01, 0x16, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ]
+
+    // другие сообщения, нули могут быть заменены чем угодно
+    // // [ 0xmsgid, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 ]
     enum class MsgTypeReceive : uint8_t
     {
         SET_DESIRED_TEMPERATURE = 0x01,

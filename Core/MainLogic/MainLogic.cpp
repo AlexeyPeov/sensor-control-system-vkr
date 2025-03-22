@@ -164,7 +164,7 @@ void MainLogic::onUartMessage(
 
 void MainLogic::onTemperatureMeasured(int16_t t)
 {
-    // debug("onTemp measured: %d", t);
+    debug("onTemp measured: %d", t);
 
     if (m_currentTemperature != t)
     {

@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <functional>
 
-#include "api/DS18B20.h"
-
 class TemperatureReader
 {
 public:
@@ -33,7 +31,7 @@ private:
         READY
     };
 
-    void handleError(DS18B20_Status status);
+    // void handleError(DS18B20_Status status);
 
 private:
     uint16_t m_timer = 0;

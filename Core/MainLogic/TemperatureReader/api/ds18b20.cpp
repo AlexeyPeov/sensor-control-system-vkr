@@ -1,177 +1,149 @@
-#include "ds18b20.h"
+#include "DS18B20.hpp"
 #include "../../fn/fn.h"
 
-void __temperature_reader_port_b11_init(void)
-{
-    HAL_GPIO_DeInit(GPIOB, GPIO_PIN_11);
-    GPIOB->CRH |= GPIO_CRH_MODE11;
-    GPIOB->CRH |= GPIO_CRH_CNF11_0;
-    GPIOB->CRH &= ~GPIO_CRH_CNF11_1;
+/*
+Constructor for temperature sensor object
+@param tim Pointer to hardware timer handle. The timer has to tick every microsecond!
+@param port GPIO port of the sensor pin, e.g. GPIOB
+@param pin GPIO pin number of the sensor pin
+*/
+DS18B20::DS18B20(GPIO_TypeDef *port, uint16_t pin) :  _port(port), _pin(pin)
+{	
 }
 
-uint8_t ds18b20_Reset(void)
+/*
+Block for given time in microseconds by waiting for the htim ticks
+*/
+void DS18B20::delay_us(uint16_t us)
 {
-    uint16_t status;
-    GPIOB->ODR &= ~GPIO_ODR_ODR11;
-    fn::DelayMicro(485);
-    GPIOB->ODR |= GPIO_ODR_ODR11;
-    fn::DelayMicro(65);
-    status = GPIOB->IDR & GPIO_IDR_IDR11;
-    fn::DelayMicro(500);
-    return (status ? 1 : 0);
+	fn::DelayMicro(us);
 }
 
-uint8_t ds18b20_ReadBit(void)
+void DS18B20::set_data_pin(bool on)
 {
-    uint8_t bit = 0;
-    GPIOB->ODR &= ~GPIO_ODR_ODR11;
-    fn::DelayMicro(2);
-    GPIOB->ODR |= GPIO_ODR_ODR11;
-    fn::DelayMicro(13);
-    bit = (GPIOB->IDR & GPIO_IDR_IDR11 ? 1 : 0);
-    fn::DelayMicro(45);
-    return bit;
+	return HAL_GPIO_WritePin(_port, _pin, on ? GPIO_PIN_SET : GPIO_PIN_RESET);
 }
 
-uint8_t ds18b20_ReadByte(void)
+void DS18B20::toggle_data_pin()
 {
-    uint8_t data = 0;
-    for (uint8_t i = 0; i <= 7; i++)
-        data += ds18b20_ReadBit() << i;
-    return data;
+	return HAL_GPIO_TogglePin(_port, _pin);
 }
 
-void ds18b20_WriteBit(uint8_t bit)
+GPIO_PinState DS18B20::read_data_pin()
 {
-    GPIOB->ODR &= ~GPIO_ODR_ODR11;
-    fn::DelayMicro(bit ? 3 : 65);
-    GPIOB->ODR |= GPIO_ODR_ODR11;
-    fn::DelayMicro(bit ? 65 : 3);
+	return HAL_GPIO_ReadPin(_port, _pin);
 }
 
-void ds18b20_WriteByte(uint8_t dt)
+void DS18B20::set_pin_output()
 {
-    for (uint8_t i = 0; i < 8; i++)
-    {
-        ds18b20_WriteBit(dt >> i & 1);
-        // Delay Protection
-        fn::DelayMicro(5);
-    }
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = _pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+	return HAL_GPIO_Init(_port, &GPIO_InitStruct);
 }
 
-DS18B20_Status ds18b20_init(uint8_t mode)
+void DS18B20::set_pin_input()
 {
-    if (ds18b20_Reset())
-        return DS18B20_Status::DS18B20_ERROR_RESET;
-    if (mode == SKIP_ROM)
-    {
-        // SKIP ROM
-        ds18b20_WriteByte(0xCC);
-        // WRITE SCRATCHPAD
-        ds18b20_WriteByte(0x4E);
-        // TH REGISTER 100
-        ds18b20_WriteByte(0x64);
-        // TL REGISTER - 30
-        ds18b20_WriteByte(0x9E);
-        // Resolution 12 bit
-        ds18b20_WriteByte(RESOLUTION_12BIT);
-    }
-    return DS18B20_Status::DS18B20_OK;
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitStruct.Pin = _pin;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+	GPIO_InitStruct.Pull = GPIO_PULLUP;
+	return HAL_GPIO_Init(_port, &GPIO_InitStruct);
 }
 
-DS18B20_Status ds18b20_MeasureTemperCmd(uint8_t mode, uint8_t DevNum)
+void DS18B20::start_sensor()
 {
-    if (ds18b20_Reset())
-    {
-        return DS18B20_Status::DS18B20_ERROR_RESET;
-    }
+	set_pin_output();
+	set_data_pin(false);
 
-    if (mode == SKIP_ROM)
-    {
-        ds18b20_WriteByte(0xCC);
-        if (ds18b20_ReadByte() != 0xCC)
-        {
-            return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
-        }
-    }
-
-    ds18b20_WriteByte(0x44);
-    if (ds18b20_ReadByte() != 0x44)
-    {
-        return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
-    }
-
-    return DS18B20_Status::DS18B20_OK;
+	delay_us(480);
+	set_pin_input();
+	delay_us(80);
+	read_data_pin();
+	delay_us(400);
 }
 
-DS18B20_Status
-ds18b20_ReadStratcpad(uint8_t mode, uint8_t* Data, uint8_t DevNum)
+void DS18B20::writeData(uint8_t data)
 {
-    uint8_t i;
+	set_pin_output();
 
-    if (ds18b20_Reset())
-    {
-        return DS18B20_Status::DS18B20_ERROR_RESET;
-    }
+	for (uint8_t i = 0; i < 8; i++)
+	{
 
-    if (mode == SKIP_ROM)
-    {
-        ds18b20_WriteByte(0xCC);
-        if (ds18b20_ReadByte() != 0xCC)
-        {
-            return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
-        }
-    }
+		if (data & (1 << i))
+		{
+			set_pin_output();
+			set_data_pin(false);
+			delay_us(1);
 
-    ds18b20_WriteByte(0xBE);
-    if (ds18b20_ReadByte() != 0xBE)
-    {
-        return DS18B20_Status::DS18B20_ERROR_COMMUNICATION;
-    }
+			set_pin_input();
+			delay_us(60);
+			continue;
+		}
 
-    // Read the scratchpad (8 bytes)
-    for (i = 0; i < 8; i++)
-    {
-        Data[i] = ds18b20_ReadByte();
-        if (Data[i] == 0xFF)
-        {
-            return DS18B20_Status::DS18B20_ERROR_TIMEOUT;
-        }
-    }
+		set_pin_output();
+		set_data_pin(false);
+		delay_us(60);
 
-    return DS18B20_Status::DS18B20_OK;
+		set_pin_input();
+	}
 }
 
-uint8_t ds18b20_GetSign(uint16_t dt)
+uint8_t DS18B20::read_data()
 {
+	uint8_t value = 0;
+	set_pin_input();
 
-    if (dt & (1 << 11))
-        return 1;
-    else
-        return 0;
+	for (uint8_t i = 0; i < 8; i++)
+	{
+		set_pin_output();
+
+		set_data_pin(false);
+		delay_us(2);
+		set_pin_input();
+
+		if (read_data_pin())
+		{
+			value |= 1 << i;
+		}
+
+		delay_us(60);
+	}
+	return value;
 }
-float ds18b20_Convert(uint16_t dt)
-{
-    float t;
-    t = (float)((dt & 0x07FF) >> 4);
-    t += (float)(dt & 0x000F) / 16.0f;
 
-    return t;
+/*
+Read the current temperature from the sensor.
+This functions blocks for around 800ms as it waits for the conversion time!
+@return Temperature in degrees Celsius
+*/
+float DS18B20::read_temp_celsius()
+{
+	start_sensor();
+	HAL_Delay(1);
+	writeData(0xCC);
+	writeData(0x44);
+	HAL_Delay(800);
+	start_sensor();
+	writeData(0xCC);
+	writeData(0xBE);
+
+	uint8_t temp1 = read_data();
+	uint8_t temp2 = read_data();
+
+	uint16_t temp_com = (temp2 << 8) | temp1;
+
+	return (float)(temp_com / 16.0);
 }
 
-std::string toString(DS18B20_Status status)
+/*
+Read the current temperature from the sensor.
+This functions blocks for around 800ms as it waits for the conversion time!
+@return Temperature in degrees Fahrenheit
+*/
+float DS18B20::read_temp_fahrenheit()
 {
-    switch (status)
-    {
-        case DS18B20_Status::DS18B20_OK:
-            return "DS18B20_OK";
-        case DS18B20_Status::DS18B20_ERROR_RESET:
-            return "DS18B20_ERROR_RESET";
-        case DS18B20_Status::DS18B20_ERROR_COMMUNICATION:
-            return "DS18B20_ERROR_COMMUNICATION";
-        case DS18B20_Status::DS18B20_ERROR_TIMEOUT:
-            return "DS18B20_ERROR_TIMEOUT";
-    }
-
-    return "";
+	return read_temp_celsius() * 1.8 + 32.0;
 }

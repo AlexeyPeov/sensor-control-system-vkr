@@ -1,33 +1,40 @@
 #include "TemperatureReader.h"
 
+#include "main.h"
+#include "stm32f103xb.h"
 #include "../fn/fn.h"
 #include "../print/print.h"
+
+#include "api/DS18B20.hpp"
+
+static DS18B20 temp_sensor(TemperatureReader_GPIO_Port, TemperatureReader_Pin);
 
 TemperatureReader::TemperatureReader(
     int tempMeasureDelayInMs,
     std::function<void(int16_t t)> onTempMeasuredCb
 ) : m_onTempMeasuredCb(std::move(onTempMeasuredCb))
 {
-    __temperature_reader_port_b11_init();
-
-    DS18B20_Status status = ds18b20_init(SKIP_ROM);
-
+    
     setTempMeasureDelay(tempMeasureDelayInMs);
 
-    debug("Temperature reader status: %d\r\n", status);
+    m_state = State::START;
 
-    if(status == DS18B20_Status::DS18B20_OK)
-    {
-        m_state = State::START;
-    }
-    else
-    {
-        handleError(status);
-    }
+    // debug("Temperature reader status: %d\r\n", status);
+
+    // if(status == DS18B20_Status::DS18B20_OK)
+    // {
+    //     m_state = State::START;
+    // }
+    // else
+    // {
+    //     handleError(status);
+    // }
 }
 
 void TemperatureReader::update(int dtInMs)
 {
+
+
     if (m_state == State::NONE)
     {
         m_emulatedTimer += dtInMs;
@@ -44,13 +51,15 @@ void TemperatureReader::update(int dtInMs)
     }
     else if (m_state == State::START)
     {
-        DS18B20_Status status = ds18b20_MeasureTemperCmd(SKIP_ROM, 0);
+        // DS18B20_Status status = ds18b20_MeasureTemperCmd(SKIP_ROM, 0);
 
-        if(status != DS18B20_Status::DS18B20_OK)
-        {
-            handleError(status);
-            return;
-        }
+        // if(status != DS18B20_Status::DS18B20_OK)
+        // {
+        //     handleError(status);
+        //     return;
+        // }
+
+        
 
         m_timer = 0;
 
@@ -67,25 +76,11 @@ void TemperatureReader::update(int dtInMs)
     }
     else if (m_state == State::READY)
     {
-        uint8_t m_buffer[8] { 0 };
-
-        DS18B20_Status status = ds18b20_ReadStratcpad(SKIP_ROM, m_buffer, 0);
-
-        if(status != DS18B20_Status::DS18B20_OK)
+        if(m_onTempMeasuredCb)
         {
-            handleError(status);
-            return;
-        }
+            float temperature = temp_sensor.read_temp_celsius();
 
-        auto val = static_cast<uint16_t>(m_buffer[1]);
-
-        uint16_t rawT = (val << 8) | m_buffer[0];
-
-        float t = ds18b20_Convert(rawT);        
-
-        if (m_onTempMeasuredCb)
-        {
-            m_onTempMeasuredCb(static_cast<int16_t>(t));
+            m_onTempMeasuredCb(temperature);
         }
 
         m_state = State::START;
@@ -110,9 +105,9 @@ void TemperatureReader::decreaseEmulatedTemperatureValBy(int16_t val) {
     m_emulatedTemperature = std::max(10,m_emulatedTemperature - val);
 }
 
-void TemperatureReader::handleError(DS18B20_Status status) 
-{
-    m_timer = 0;
-    m_state = State::NONE;
-    error("TemperatureReader error %s, switch to emulated", toString(status).c_str());
-}
+// void TemperatureReader::handleError(DS18B20_Status status) 
+// {
+//     m_timer = 0;
+//     m_state = State::NONE;
+//     error("TemperatureReader error %s, switch to emulated", toString(status).c_str());
+// }
