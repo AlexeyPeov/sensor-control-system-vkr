@@ -2,10 +2,14 @@
 
 #include <cstdint>
 
+#include "../Blinker/Blinker.h"
+
 class Refrigerator
 {
 public:
-    static Refrigerator& instance();
+    Refrigerator() = default;
+
+    Refrigerator(Blinker blinker);
 
     bool isOn() const;
     
@@ -18,12 +22,10 @@ public:
     bool isManualControl() const;
     
     void update(int dtInMs);
-    
-private:
-    Refrigerator();
 
 private:
     uint16_t m_timer = 0;
-    bool m_isOn = false;
     bool m_isManual = false;
+    Blinker m_blinker;
+
 };

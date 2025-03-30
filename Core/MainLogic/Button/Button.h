@@ -32,6 +32,7 @@ public:
 private:
     GPIO_TypeDef* m_buttonPort = nullptr;
     uint16_t m_buttonPin = 0;
+    bool m_buttonWasUp = true;
     std::function<void()> m_onPress = nullptr;
     std::function<void()> m_onRelease = nullptr;
 };

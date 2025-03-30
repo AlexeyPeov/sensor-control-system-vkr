@@ -10,59 +10,60 @@
 
 #include <cstdint>
 
-#include "print/print.h"
-#include "Screen/Screen.h"
-#include "Network/Network.h"
-#include "TemperatureReader/TemperatureReader.h"
-#include "Potentiometer/Potentiometer.h"
 #include "Button/Button.h"
+#include "Network/Network.h"
+#include "Potentiometer/Potentiometer.h"
 #include "Refrigerator/Refrigerator.h"
+#include "Screen/Screen.h"
+#include "TemperatureReader/TemperatureReader.h"
+#include "print/print.h"
 
-namespace constants
+#include "ReleModule/ReleModule.h"
+#include "ValueChangeObserver/ValueChangeObserver.h"
+
+class MainLogic
 {
-	constexpr int16_t tempMin = 10;
-	constexpr int16_t tempMax = 35;
-	constexpr int16_t initialDesiredTemp = 25;
-	constexpr int16_t refrigerantInitThresholdDeg = 2;
-	
-} // namespace constants
-
-
-class MainLogic {
 public:
-	MainLogic();
-	~MainLogic();
+    MainLogic();
+    ~MainLogic();
 
-	void update(int dtInMs);
-
-private:
-
-	void onUartMessage(Network::MsgTypeReceive type, uint8_t* data, uint8_t size);
-
-	void onTemperatureMeasured(int16_t t);
-
-	void onButtonPressed();
-
-	bool setDesiredTemperature(int16_t temp);
-	
-	void updateDisplay();
-
-	void updateRefrigerator(bool useThreshold = true);
+    void update(int dtInMs);
 
 private:
+    enum class State
+    {
+        SWITCHING_RELE,
+        CHANGING_DESIRED_TEMPERATURE
+    };
 
-	std::string m_displayLine1;
-	std::string m_displayLine2;
+private:
+    void onUartMessage(
+        Network::MsgTypeReceive type,
+        uint8_t* data,
+        uint8_t size
+    );
 
-	int16_t m_currentTemperature = 1;
-	int16_t m_desiredTemperature = 0;
-	int16_t m_potentiometerValueRead = 0;
+    void updateDisplay(const ReleModule& curr);
+    void onButtonPressed();
 
-	TemperatureReader m_temperatureReader;
-	Potentiometer m_potentiometer;
-	Button m_button;
+private:
+    std::string m_displayLine1;
+    std::string m_displayLine2;
 
-	bool m_desiredTempChangeApplied = false;
+    static constexpr uint8_t m_numSensors = 4;
+
+    State m_state = State::SWITCHING_RELE;
+
+    ReleModule m_releModules[m_numSensors];
+
+    uint8_t m_currReleId = 0;
+
+    Potentiometer m_potentiometer;
+    Button m_button;
+
+    ValueChangeObserver<int16_t> m_currModuleTemp;
+    ValueChangeObserver<int16_t> m_potentiometerValueSwitchingReles;
+    ValueChangeObserver<int16_t> m_potentiometerValueChangingTemp;
 };
 
 #endif /* MAINLOGIC_MAINLOGIC_H_ */

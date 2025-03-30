@@ -33,7 +33,12 @@ int16_t Potentiometer::getValueMapped(int min, int max)
 
     float normalizedValue = static_cast<float>(sum / numSamples) / ADC_MAX;
 
-    float res = min + (normalizedValue * (max - min));
+    float res = min + (normalizedValue * (max+1 - min));
 
     return static_cast<int16_t>(res);
+}
+
+int16_t Potentiometer::getValue()
+{
+    return getValueMapped(0,4095);
 }

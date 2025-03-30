@@ -42,35 +42,35 @@ static bool digitalRead(GPIO_TypeDef* buttonPort, uint16_t buttonPin)
 
 void Button::update(int dtInMs)
 {
-    struct ButtonWasUp
-    {
-    public:
-        ButtonWasUp() : m_value(0xFFFFFFFF) { }
+    // struct ButtonWasUp
+    // {
+    // public:
+    //     ButtonWasUp() : m_value(0xFFFFFFFF) { }
 
-        bool operator[](int index) const
-        {
-            if (index < 0 || index >= 32)
-                return false;
+    //     bool operator[](int index) const
+    //     {
+    //         if (index < 0 || index >= 32)
+    //             return false;
 
-            return (m_value & (1 << index)) != 0;
-        }
+    //         return (m_value & (1 << index)) != 0;
+    //     }
 
-        void set(int index, bool state)
-        {
-            if (index < 0 || index >= 32)
-                return;
+    //     void set(int index, bool state)
+    //     {
+    //         if (index < 0 || index >= 32)
+    //             return;
 
-            if (state)
-                m_value |= (1 << index);
-            else
-                m_value &= ~(1 << index);
-        }
+    //         if (state)
+    //             m_value |= (1 << index);
+    //         else
+    //             m_value &= ~(1 << index);
+    //     }
 
-    private:
-        uint32_t m_value;
-    };
+    // private:
+    //     uint32_t m_value;
+    // };
 
-    static ButtonWasUp buttonWasUp;
+    // static ButtonWasUp buttonWasUp;
 
     // определить момент «клика» несколько сложнее, чем факт того,
     // что кнопка сейчас просто нажата. Для определения клика мы
@@ -78,7 +78,7 @@ void Button::update(int dtInMs)
 
     bool buttonIsUp = digitalRead(m_buttonPort, m_buttonPin);
     // ...если «кнопка была отпущена и (&&) не отпущена сейчас»...
-    if (buttonWasUp[m_buttonPin] && !buttonIsUp)
+    if (m_buttonWasUp && !buttonIsUp)
     {
         // ...может это «клик», а может и ложный сигнал (дребезг),
         // возникающий в момент замыкания/размыкания пластин кнопки,
@@ -97,7 +97,7 @@ void Button::update(int dtInMs)
             }
         }
     }
-    else if (!buttonWasUp[m_buttonPin] && buttonIsUp)
+    else if (!m_buttonWasUp && buttonIsUp)
     {
         HAL_Delay(10);
         buttonIsUp = digitalRead(m_buttonPort, m_buttonPin);
@@ -109,5 +109,5 @@ void Button::update(int dtInMs)
     }
 
     // запоминаем последнее состояние кнопки для новой итерации
-    buttonWasUp.set(m_buttonPin, buttonIsUp);
+    m_buttonWasUp = buttonIsUp;    
 }

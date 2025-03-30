@@ -18,5 +18,7 @@ public:
     /// on error returns min - 1
     int16_t getValueMapped(int min, int max);
 
+    /// @return value in range [0, 4095]
+    int16_t getValue();
     
 };

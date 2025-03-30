@@ -8,64 +8,141 @@
 #include "MainLogic.h"
 #include "fn/fn.h"
 
-MainLogic::MainLogic() :
-    m_displayLine1("Current temp: 15c"), m_displayLine2("Desir   temp: 15c"),
-    m_temperatureReader(3000, [this](int16_t t) { onTemperatureMeasured(t); }),
-    m_button(Button_GPIO_Port, Button_Pin)
+MainLogic::MainLogic()
+    : m_displayLine1("Current temp: 15c"), m_displayLine2("Desir   temp: 15c"),
+      m_button(Button_GPIO_Port, Button_Pin),
+      m_currModuleTemp(
+          -1,
+          [this](int16_t t)
+          {
+              updateDisplay(m_releModules[m_currReleId]);
+          }
+      ),
+      m_potentiometerValueSwitchingReles(
+          -1,
+          [this](int16_t releId)
+          {
+              m_currReleId = fn::fitInRange<uint8_t>(
+                  releId,
+                  0,
+                  m_numSensors - 1
+              );
+
+              updateDisplay(m_releModules[m_currReleId]);
+          }
+      ),
+      m_potentiometerValueChangingTemp(
+          -1,
+          [this](int16_t newDesiredTemp)
+          {
+              m_releModules[m_currReleId].setPendingTemp(newDesiredTemp);
+
+              updateDisplay(m_releModules[m_currReleId]);
+          }
+      )
+
 {
 
-    setDesiredTemperature(constants::initialDesiredTemp);
+    struct PinInfo
+    {
+        GPIO_TypeDef* letter;
+        uint16_t pinId;
 
-    updateDisplay();
+        PinInfo(GPIO_TypeDef* info, uint16_t id) : letter(info), pinId(id)
+        {
+        }
+    };
+
+    PinInfo tempReaderInfos[m_numSensors] = {
+        { GPIOB, GPIO_PIN_12 },
+        { GPIOB, GPIO_PIN_13 },
+        { GPIOB, GPIO_PIN_14 },
+        { GPIOB, GPIO_PIN_15 },
+    };
+
+    PinInfo blinekrInfos[m_numSensors] = {
+        { GPIOB, GPIO_PIN_3 },
+        { GPIOB, GPIO_PIN_4 },
+        { GPIOB, GPIO_PIN_5 },
+        { GPIOB, GPIO_PIN_8 },
+    };
+
+    for (uint8_t i = 0; i < m_numSensors; ++i)
+    {
+        m_releModules[i] = ReleModule(
+            TemperatureReader(
+                tempReaderInfos[i].letter,
+                tempReaderInfos[i].pinId,
+                2000
+            ),
+            Refrigerator(Blinker(blinekrInfos[i].letter, blinekrInfos[i].pinId))
+        );
+    }
+
+    updateDisplay(m_releModules[m_currReleId]);
 
     Network::instance().init(
         [this](Network::MsgTypeReceive msgT, uint8_t* data, uint8_t size)
-        { onUartMessage(msgT, data, size); }
+        {
+            onUartMessage(msgT, data, size);
+        }
     );
 
-    m_button.setOnClick(nullptr, [this] { onButtonPressed(); });
+    m_button.setOnClick(
+        nullptr,
+        [this]
+        {
+            onButtonPressed();
+        }
+    );
 }
 
-MainLogic::~MainLogic() { }
+MainLogic::~MainLogic()
+{
+}
 
 void MainLogic::update(int dtInMs)
 {
-    m_temperatureReader.update(dtInMs);
+    for (int i = 0; i < m_numSensors; ++i)
+    {
+        m_releModules[i].update(dtInMs);
+    }
+
     m_button.update(dtInMs);
 
-    updateRefrigerator();
-
-    int16_t prevPotentiometerValue = m_potentiometerValueRead;
-
-    m_potentiometerValueRead = m_potentiometer.getValueMapped(
-        constants::tempMin,
-        constants::tempMax
-    );
-
-    if (m_potentiometerValueRead == constants::tempMin - 1)
+    if (m_state == State::SWITCHING_RELE)
     {
-        return;
-    }
+        int16_t value = m_potentiometer.getValueMapped(0, m_numSensors - 1);
 
-    if (prevPotentiometerValue == m_potentiometerValueRead)
+        if (value == -1)
+        {
+            error("potentiom failure");
+            return;
+        }
+
+        m_potentiometerValueSwitchingReles.setValue(value);
+
+        m_currModuleTemp.setValue(
+            m_releModules[m_currReleId].getCurrentTemperature()
+        );
+
+        m_potentiometerValueSwitchingReles.setValue(value);
+    }
+    else if (m_state == State::CHANGING_DESIRED_TEMPERATURE)
     {
-        return;
+        int16_t value = m_potentiometer.getValueMapped(
+            ReleModule::constants::tempMin,
+            ReleModule::constants::tempMax
+        );
+
+        if (value == -1)
+        {
+            error("potentiom failure");
+            return;
+        }
+
+        m_potentiometerValueChangingTemp.setValue(value);
     }
-
-    m_desiredTempChangeApplied = false;
-
-    if (m_potentiometerValueRead == m_desiredTemperature)
-    {
-        m_desiredTempChangeApplied = true;
-    }
-
-    // m_desiredTemperature = m_potentiometerValueRead;
-    debug(
-        "potentiometer value update prev: %d, curr: %d",
-        prevPotentiometerValue,
-        m_potentiometerValueRead
-    );
-    updateDisplay();
 }
 
 void MainLogic::onUartMessage(
@@ -74,148 +151,151 @@ void MainLogic::onUartMessage(
     uint8_t size
 )
 {
+    uint8_t moduleId = data[0];
+
+    if (!fn::isInRange(moduleId, 0, m_numSensors - 1))
+    {
+        Network::sendMessage(
+            Network::MsgTypeSend::RESULT_FAIL,
+            "rec module id out of range - %d",
+            moduleId
+        );
+
+        return;
+    }
+
     if (type == Network::MsgTypeReceive::SET_DESIRED_TEMPERATURE)
     {
 
-        auto msg = fn::castToStruct<TemperatureMessage>(data, size);
+        auto msg = fn::castToStruct<TemperatureMessage>(data + 1, size - 1);
 
-        bool success = setDesiredTemperature(msg.desiredTemp);
+        auto& rele = m_releModules[moduleId];
+
+        bool success = rele.setDesiredTemperature(msg.desiredTemp);
 
         auto msgT = success ? Network::MsgTypeSend::RESULT_OK
                             : Network::MsgTypeSend::RESULT_FAIL;
 
-        Network::sendMessage(msgT, "setDesiredTemp: %d", m_desiredTemperature);
+        Network::sendMessage(
+            msgT,
+            "setDesiredTemp: %d",
+            rele.getDesiredTemperatire()
+        );
     }
     else if (type == Network::MsgTypeReceive::GET_CURR_TEMPERATURE)
     {
         Network::sendMessage(
             Network::MsgTypeSend::CURR_TEMPERATURE,
-            "%d",
-            m_currentTemperature
+            "%d %d",
+            m_releModules[moduleId].getCurrentTemperature()
         );
     }
     else if (type == Network::MsgTypeReceive::GET_DESIRED_TEMPERATURE)
     {
         Network::sendMessage(
             Network::MsgTypeSend::DESIRED_TEMPERATURE,
-            "%d",
-            m_desiredTemperature
+            "%d %d",
+            m_releModules[moduleId].getDesiredTemperatire()
         );
     }
     else if (type == Network::MsgTypeReceive::KEEP_REFRIGERATOR_ON)
     {
         bool alwaysOn = true;
-        Refrigerator::instance().enableManualControl(alwaysOn);
-        updateDisplay();
+        m_releModules[moduleId].enableManualControl(alwaysOn);
+
         Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
+
+        if (moduleId == m_currReleId)
+        {
+            updateDisplay(m_releModules[m_currReleId]);
+        }
     }
     else if (type == Network::MsgTypeReceive::KEEP_REFRIGERATOR_OFF)
     {
         bool alwaysOn = false;
-        Refrigerator::instance().enableManualControl(alwaysOn);
-        updateDisplay();
+        m_releModules[moduleId].enableManualControl(alwaysOn);
 
         Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
+
+        if (moduleId == m_currReleId)
+        {
+            updateDisplay(m_releModules[m_currReleId]);
+        }
     }
     else if (type == Network::MsgTypeReceive::REFRIGERATOR_MANUAL_CONTROL_OFF)
     {
-        Refrigerator::instance().disableManualControl();
+        m_releModules[moduleId].disableManualControl();
 
         Network::sendMessage(Network::MsgTypeSend::RESULT_OK, "");
+
+        if (moduleId == m_currReleId)
+        {
+            updateDisplay(m_releModules[m_currReleId]);
+        }
     }
     else if (type == Network::MsgTypeReceive::GET_IS_REFRIGERATOR_ON)
     {
         Network::sendMessage(
             Network::MsgTypeSend::IS_REFRIGERATOR_ON,
             "%d",
-            Refrigerator::instance().isOn()
+            m_releModules[moduleId].getRefrigerator().isOn()
         );
-    }
-}
-
-void MainLogic::onTemperatureMeasured(int16_t t)
-{
-    debug("onTemp measured: %d", t);
-
-    if (m_currentTemperature != t)
-    {
-        m_currentTemperature = t;
-
-        updateDisplay();
     }
 }
 
 void MainLogic::onButtonPressed()
 {
-    int16_t potentiometerValue = m_potentiometer.getValueMapped(
-        constants::tempMin,
-        constants::tempMax
-    );
+    // int16_t potentiometerValue = m_potentiometer.getValue();
 
-    if (potentiometerValue == constants::tempMin - 1)
+    debug("onBtnPressed, state:%d", m_state);
+
+    if (m_state == State::SWITCHING_RELE)
     {
-        const char* errorV = "Err potentiom";
-
-        Screen::print(0, 0, errorV);
-
-        error(errorV);
-
-        return;
+        m_state = State::CHANGING_DESIRED_TEMPERATURE;
     }
+    else if (m_state == State::CHANGING_DESIRED_TEMPERATURE)
+    {
+        m_releModules[m_currReleId].applyPendingTemp();
 
-    setDesiredTemperature(potentiometerValue);
+        m_state = State::SWITCHING_RELE;
+    }
 }
 
-bool MainLogic::setDesiredTemperature(int16_t temp)
+void MainLogic::updateDisplay(const ReleModule& info)
 {
-    if (m_desiredTemperature == temp)
-    {
-        return true;
-    }
+    debug("update display, releId: %d", m_currReleId);
 
-    if (!fn::isInRange(temp, constants::tempMin, constants::tempMax))
+    if(m_state == State::CHANGING_DESIRED_TEMPERATURE)
     {
-        error(
-            "setDesiredTemperature out of range %d-%d, rec: %d",
-            constants::tempMin,
-            constants::tempMax,
-            temp
+        snprintf(
+            &m_displayLine1[0],
+            m_displayLine1.size(),
+            "id%d t:%dc  on:%d",
+            m_currReleId,
+            info.getCurrentTemperature(),
+            info.getRefrigerator().isOn()
         );
-
-        return false;
-        // temp = fn::fitInRange(temp,constants::tempMin, constants::tempMax);
+    }
+    else
+    {
+        snprintf(
+            &m_displayLine1[0],
+            m_displayLine1.size(),
+            "id%d t:%dc  chsn",
+            m_currReleId,
+            info.getCurrentTemperature(),
+            info.getRefrigerator().isOn()
+        );
     }
 
-    debug("set desired temp: %d", temp);
 
-    m_desiredTemperature = temp;
-    m_desiredTempChangeApplied = true;
-
-    updateDisplay();
-    updateRefrigerator(false);
-
-    return true;
-}
-
-void MainLogic::updateDisplay()
-{
-    // debug("update display");
-
-    snprintf(
-        &m_displayLine1[0],
-        m_displayLine1.size(),
-        "cur t:%dc  on:%d",
-        m_currentTemperature,
-        Refrigerator::instance().isOn()
-    );
-
-    if (m_desiredTempChangeApplied)
+    if (info.isDesiredTempApplied())
     {
         snprintf(
             &m_displayLine2[0],
             m_displayLine2.size(),
             "trg t:%dc        ",
-            m_desiredTemperature
+            info.getDesiredTemperatire()
         );
     }
     else
@@ -224,41 +304,12 @@ void MainLogic::updateDisplay()
             &m_displayLine2[0],
             m_displayLine2.size(),
             "trg t:%dc, *%dc ",
-            m_desiredTemperature,
-            m_potentiometerValueRead
+            info.getDesiredTemperatire(),
+            info.getDesiredTemperatirePending()
         );
     }
 
     // Screen::clear();
     Screen::print(0, 0, m_displayLine1.c_str());
     Screen::print(0, 1, m_displayLine2.c_str());
-}
-
-void MainLogic::updateRefrigerator(bool useThreshold)
-{
-    auto& refrigerator = Refrigerator::instance();
-
-    if (refrigerator.isManualControl())
-    {
-        return;
-    }
-
-    int16_t desTemp = m_desiredTemperature;
-
-    if(useThreshold)
-    {
-        desTemp += constants::refrigerantInitThresholdDeg;
-    }
-
-    if (m_currentTemperature > desTemp && !refrigerator.isOn())
-    {
-        refrigerator.setOn();
-        updateDisplay();
-    }
-    
-    if (m_currentTemperature < m_desiredTemperature && refrigerator.isOn())
-    {
-        refrigerator.setOff();
-        updateDisplay();
-    }
 }

@@ -9,6 +9,7 @@
 class DS18B20
 {
 public:
+	
 	DS18B20(GPIO_TypeDef *port, uint16_t pin);
 
 	bool readCelciusBegin();
