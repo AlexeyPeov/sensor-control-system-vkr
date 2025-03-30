@@ -4,19 +4,61 @@
 
 #include "../print/print.h"
 
-Button::Button(GPIO_TypeDef* buttonPort, uint16_t m_buttonPin) :
-    m_buttonPort(buttonPort), m_buttonPin(m_buttonPin)
+static GPIO_PinState buttonState(GPIO_TypeDef* buttonPort, uint16_t buttonPin)
+{
+    GPIO_PinState state = HAL_GPIO_ReadPin(buttonPort, buttonPin);
+
+    // debug("button state: %d", !state);
+
+    if (state == GPIO_PinState::GPIO_PIN_RESET)
+        return GPIO_PinState::GPIO_PIN_SET;
+    return GPIO_PinState::GPIO_PIN_RESET;
+}
+
+Button::Button(GPIO_TypeDef* buttonPort, uint16_t m_buttonPin)
+    : m_buttonPort(buttonPort), m_buttonPin(m_buttonPin)
 {
 }
 
 Button::Button(
     GPIO_TypeDef* buttonPort,
-    uint16_t m_buttonPin,
+    uint16_t buttonPin,
     std::function<void()> onPress,
     std::function<void()> onRelease
-) :
-    m_buttonPort(buttonPort), m_buttonPin(m_buttonPin),
-    m_onPress(std::move(onPress)), m_onRelease(std::move(onRelease))
+)
+    : m_buttonPort(buttonPort), m_buttonPin(m_buttonPin),
+      m_onPress(std::move(onPress)), m_onRelease(std::move(onRelease)),
+      m_btnState(
+          static_cast<GPIO_PinState>(3),
+          [this](GPIO_PinState newState)
+          {
+            debug("btn state changed");
+
+              if (newState == GPIO_PinState::GPIO_PIN_SET && m_onPress)
+              {
+                  HAL_Delay(10);
+
+                  newState = buttonState(m_buttonPort, m_buttonPin);
+
+                  if (newState == GPIO_PIN_SET)
+                  {
+                      m_onPress();
+                  }
+              }
+
+              if (newState == GPIO_PinState::GPIO_PIN_RESET && m_onRelease)
+              {
+                  HAL_Delay(10);
+
+                  newState = buttonState(m_buttonPort, m_buttonPin);
+
+                  if (newState == GPIO_PIN_RESET)
+                  {
+                      m_onRelease();
+                  }
+              }
+          }
+      )
 {
 }
 
@@ -27,17 +69,6 @@ void Button::setOnClick(
 {
     m_onPress = std::move(onPress);
     m_onRelease = std::move(onRelease);
-}
-
-static bool digitalRead(GPIO_TypeDef* buttonPort, uint16_t buttonPin)
-{
-    GPIO_PinState state = HAL_GPIO_ReadPin(buttonPort, buttonPin);
-
-    bool read = state == GPIO_PinState::GPIO_PIN_RESET;
-
-    // debug("Button read: %d", read);
-
-    return read;
 }
 
 void Button::update(int dtInMs)

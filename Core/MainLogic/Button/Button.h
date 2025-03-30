@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include "../ValueChangeObserver/ValueChangeObserver.h"
 
 #include "stm32f103xb.h"
 
@@ -35,4 +36,6 @@ private:
     bool m_buttonWasUp = true;
     std::function<void()> m_onPress = nullptr;
     std::function<void()> m_onRelease = nullptr;
+    ValueChangeObserver<GPIO_PinState> m_btnState;
+
 };
