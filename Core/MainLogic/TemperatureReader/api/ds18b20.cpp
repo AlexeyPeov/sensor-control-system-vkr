@@ -153,7 +153,7 @@ std::optional<float> DS18B20::readCelciusEnd()
 
 	float tempRet = (float)(temp_com / 16.0);
 
-	if(tempRet > 50.f)
+	if(!fn::isInRange(tempRet, 10, 50))
 	{
 		return std::nullopt;
 	}

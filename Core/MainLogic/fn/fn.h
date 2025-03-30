@@ -34,4 +34,13 @@ namespace fn
         memcpy(&msg, data, sizeof(Struct));
         return msg;
     }
+
+    // template <typename T>
+    // T mapValue(const T& value, const T& min, const T& max)
+    // {
+    //     float v = value;
+    //     float m = min;
+    //     float maxF = max+1;
+    //     return m + ((v * (maxF - m)) / maxF);
+    // }
 }

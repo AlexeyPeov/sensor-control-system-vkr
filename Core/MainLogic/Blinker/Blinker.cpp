@@ -6,17 +6,45 @@
  */
 
 #include "Blinker.h"
+#include "../print/print.h"
 
-Blinker::Blinker() {
-	// TODO Auto-generated constructor stub
-
-//	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PinState::GPIO_PIN_SET);
-//		HAL_Delay(100);
-//		HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PinState::GPIO_PIN_RESET);
-//		HAL_Delay(100);
+Blinker::Blinker()
+{
 }
 
-Blinker::~Blinker() {
-	// TODO Auto-generated destructor stub
+Blinker::Blinker(GPIO_TypeDef* GPIO_PIN_LETTER, uint16_t GPIO_PIN_ID) :
+    m_pinLetter(GPIO_PIN_LETTER), m_pin(GPIO_PIN_ID), m_isOn(false)
+{
+    HAL_GPIO_WritePin(
+        GPIO_PIN_LETTER,
+        GPIO_PIN_ID,
+        GPIO_PinState::GPIO_PIN_RESET
+    );
 }
 
+void Blinker::set(bool on)
+{
+    if (m_pin == -1)
+    {
+        error("blinker pin -1");
+        return;
+    }
+
+    m_isOn = on;
+
+    GPIO_PinState state = on ? GPIO_PIN_SET : GPIO_PIN_RESET;
+
+    HAL_GPIO_WritePin(m_pinLetter, m_pin, state);
+
+    debug("set blinker %d-%d on: %d", m_pinLetter,m_pin,state);
+}
+
+bool Blinker::isOn() const
+{
+    return m_isOn;
+}
+
+Blinker::~Blinker()
+{
+    // TODO Auto-generated destructor stub
+}

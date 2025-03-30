@@ -3,20 +3,27 @@
 #include <cstdint>
 #include <functional>
 
+#include "api/DS18B20.hpp"
+
 class TemperatureReader
 {
 public:
+    TemperatureReader();
 
     TemperatureReader(
+        GPIO_TypeDef* GPIO_PIN_LETTER,
+        uint16_t GPIO_PIN_ID,
         int tempMeasureDelayInMs,
-        std::function<void(int16_t t)> onTempMeasuredCb
+        std::function<void(int16_t t)> onTempMeasuredCb = nullptr
     );
-    
+
     void update(int dtInMs);
 
     void setTempMeasureDelay(int delayInMs);
 
     void setOnTempMeasuredCb(std::function<void(int16_t t)> onTempMeasuredCb);
+
+    int16_t getLastMeasuredTemperature() const;
 
 private:
     enum class State : uint8_t
@@ -35,6 +42,8 @@ private:
 
     State m_state = State::NONE;
     int16_t m_lastMeasuredTemperature = 25;
+
+    DS18B20 m_sensor;
 
     std::function<void(int16_t temperature)> m_onTempMeasuredCb = nullptr;
 };

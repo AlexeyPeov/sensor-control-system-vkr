@@ -1,20 +1,26 @@
 #include "TemperatureReader.h"
 
-#include "main.h"
-#include "stm32f103xb.h"
 #include "../fn/fn.h"
 #include "../print/print.h"
+#include "main.h"
+#include "stm32f103xb.h"
 
-#include "api/DS18B20.hpp"
+// static DS18B20 tempSensor(TemperatureReader_GPIO_Port, TemperatureReader_Pin);
 
-static DS18B20 tempSensor(TemperatureReader_GPIO_Port, TemperatureReader_Pin);
+TemperatureReader::TemperatureReader() : m_sensor(nullptr,0)
+{
+}
 
 TemperatureReader::TemperatureReader(
+    GPIO_TypeDef* GPIO_PIN_LETTER,
+    uint16_t GPIO_PIN_ID,
     int tempMeasureDelayInMs,
     std::function<void(int16_t t)> onTempMeasuredCb
-) : m_onTempMeasuredCb(std::move(onTempMeasuredCb))
+) :
+    m_sensor(GPIO_PIN_LETTER, GPIO_PIN_ID),
+    m_onTempMeasuredCb(std::move(onTempMeasuredCb))
 {
-    
+
     setTempMeasureDelay(tempMeasureDelayInMs);
 
     m_state = State::START;
@@ -37,7 +43,7 @@ void TemperatureReader::update(int dtInMs)
     {
         m_timer += dtInMs;
 
-        if(m_timer >= m_delayTriggerTime)
+        if (m_timer >= m_delayTriggerTime)
         {
             m_timer = 0;
             m_state = State::START;
@@ -45,9 +51,9 @@ void TemperatureReader::update(int dtInMs)
     }
     else if (m_state == State::START)
     {
-        bool success = tempSensor.readCelciusBegin();
+        bool success = m_sensor.readCelciusBegin();
 
-        if(!success)
+        if (!success)
         {
             m_state = State::NONE;
             return;
@@ -68,13 +74,13 @@ void TemperatureReader::update(int dtInMs)
     }
     else if (m_state == State::READY)
     {
-        if(m_onTempMeasuredCb)
+        if (m_onTempMeasuredCb)
         {
             // std::optional<float> temp = tempSensor.readCelciusEnd();
 
-            std::optional<float> temp = tempSensor.readCelciusEnd();
+            std::optional<float> temp = m_sensor.readCelciusEnd();
 
-            if(temp)
+            if (temp)
             {
                 m_onTempMeasuredCb(*temp);
                 m_lastMeasuredTemperature = *temp;
@@ -84,7 +90,6 @@ void TemperatureReader::update(int dtInMs)
                 m_state = State::NONE;
                 return;
             }
-
         }
 
         m_state = State::START;
@@ -103,3 +108,7 @@ void TemperatureReader::setOnTempMeasuredCb(
     m_onTempMeasuredCb = std::move(onTempMeasuredCb);
 }
 
+int16_t TemperatureReader::getLastMeasuredTemperature() const
+{
+    return m_lastMeasuredTemperature;
+}
