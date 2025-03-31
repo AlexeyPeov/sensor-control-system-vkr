@@ -25,6 +25,8 @@ public:
 
     int16_t getLastMeasuredTemperature() const;
 
+    bool isWorking() const;
+
 private:
     enum class State : uint8_t
     {

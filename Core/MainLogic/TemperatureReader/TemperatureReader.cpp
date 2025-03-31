@@ -5,9 +5,10 @@
 #include "main.h"
 #include "stm32f103xb.h"
 
-// static DS18B20 tempSensor(TemperatureReader_GPIO_Port, TemperatureReader_Pin);
+// static DS18B20 tempSensor(TemperatureReader_GPIO_Port,
+// TemperatureReader_Pin);
 
-TemperatureReader::TemperatureReader() : m_sensor(nullptr,0)
+TemperatureReader::TemperatureReader() : m_sensor(nullptr, 0)
 {
 }
 
@@ -16,9 +17,9 @@ TemperatureReader::TemperatureReader(
     uint16_t GPIO_PIN_ID,
     int tempMeasureDelayInMs,
     std::function<void(int16_t t)> onTempMeasuredCb
-) :
-    m_sensor(GPIO_PIN_LETTER, GPIO_PIN_ID),
-    m_onTempMeasuredCb(std::move(onTempMeasuredCb))
+)
+    : m_sensor(GPIO_PIN_LETTER, GPIO_PIN_ID),
+      m_onTempMeasuredCb(std::move(onTempMeasuredCb))
 {
 
     setTempMeasureDelay(tempMeasureDelayInMs);
@@ -73,23 +74,23 @@ void TemperatureReader::update(int dtInMs)
         }
     }
     else if (m_state == State::READY)
-    {
-        if (m_onTempMeasuredCb)
+    {        
+
+        std::optional<float> temp = m_sensor.readCelciusEnd();
+
+        if (temp)
         {
-            // std::optional<float> temp = tempSensor.readCelciusEnd();
-
-            std::optional<float> temp = m_sensor.readCelciusEnd();
-
-            if (temp)
+            if (m_onTempMeasuredCb)
             {
                 m_onTempMeasuredCb(*temp);
-                m_lastMeasuredTemperature = *temp;
             }
-            else
-            {
-                m_state = State::NONE;
-                return;
-            }
+            
+            m_lastMeasuredTemperature = *temp;
+        }
+        else
+        {
+            m_state = State::NONE;
+            return;
         }
 
         m_state = State::START;
@@ -111,4 +112,9 @@ void TemperatureReader::setOnTempMeasuredCb(
 int16_t TemperatureReader::getLastMeasuredTemperature() const
 {
     return m_lastMeasuredTemperature;
+}
+
+bool TemperatureReader::isWorking() const
+{
+    return m_state != State::NONE;
 }

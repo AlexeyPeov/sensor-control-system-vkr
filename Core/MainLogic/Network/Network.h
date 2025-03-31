@@ -56,24 +56,22 @@ public:
 
     enum class MsgTypeSend : uint8_t
     {
-        LOG_DEBUG = '0',
+        LOG_DEBUG       = 0x00,
         LOG_INFO,
         LOG_WARN,
         LOG_ERROR,
-        RESULT_OK = 'T',
-        RESULT_FAIL = 'F',
-
-        CURR_TEMPERATURE = 'C',
-        DESIRED_TEMPERATURE = 'D',
-        IS_REFRIGERATOR_ON = 'R',
+        RESULT_OK,
+        RESULT_FAIL,
     };
 
     static Network& instance();
 
     void init(
-        std::function<void(MsgTypeReceive msg, uint8_t* data, uint8_t size)>
-            onReceiveMsgCb
-        = nullptr
+        std::function<void(
+            MsgTypeReceive msg, 
+            uint8_t* data, 
+            uint8_t size
+        )> onReceiveMsgCb = nullptr
     );
 
     void triggerReceiveMsgCb(MsgTypeReceive msg, uint8_t* data, uint8_t size);
@@ -82,6 +80,8 @@ public:
 
 private:
     Network();
+
+    static const std::string& msgToString(MsgTypeSend msg);
 
 private:
     uint8_t m_recBuffer[constants::bufferSize] { 0 };

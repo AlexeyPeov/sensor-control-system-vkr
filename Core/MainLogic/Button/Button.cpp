@@ -4,15 +4,11 @@
 
 #include "../print/print.h"
 
-static GPIO_PinState buttonState(GPIO_TypeDef* buttonPort, uint16_t buttonPin)
+static bool buttonIsNotPressed(GPIO_TypeDef* buttonPort, uint16_t buttonPin)
 {
-    GPIO_PinState state = HAL_GPIO_ReadPin(buttonPort, buttonPin);
+    GPIO_PinState state = HAL_GPIO_ReadPin(buttonPort, buttonPin);    
 
-    // debug("button state: %d", !state);
-
-    if (state == GPIO_PinState::GPIO_PIN_RESET)
-        return GPIO_PinState::GPIO_PIN_SET;
-    return GPIO_PinState::GPIO_PIN_RESET;
+    return state != GPIO_PinState::GPIO_PIN_RESET;
 }
 
 Button::Button(GPIO_TypeDef* buttonPort, uint16_t m_buttonPin)
@@ -26,39 +22,8 @@ Button::Button(
     std::function<void()> onPress,
     std::function<void()> onRelease
 )
-    : m_buttonPort(buttonPort), m_buttonPin(m_buttonPin),
-      m_onPress(std::move(onPress)), m_onRelease(std::move(onRelease)),
-      m_btnState(
-          static_cast<GPIO_PinState>(3),
-          [this](GPIO_PinState newState)
-          {
-            debug("btn state changed");
-
-              if (newState == GPIO_PinState::GPIO_PIN_SET && m_onPress)
-              {
-                  HAL_Delay(10);
-
-                  newState = buttonState(m_buttonPort, m_buttonPin);
-
-                  if (newState == GPIO_PIN_SET)
-                  {
-                      m_onPress();
-                  }
-              }
-
-              if (newState == GPIO_PinState::GPIO_PIN_RESET && m_onRelease)
-              {
-                  HAL_Delay(10);
-
-                  newState = buttonState(m_buttonPort, m_buttonPin);
-
-                  if (newState == GPIO_PIN_RESET)
-                  {
-                      m_onRelease();
-                  }
-              }
-          }
-      )
+    : m_buttonPort(buttonPort), m_buttonPin(buttonPin),
+      m_onPress(std::move(onPress)), m_onRelease(std::move(onRelease))      
 {
 }
 
@@ -107,7 +72,7 @@ void Button::update(int dtInMs)
     // что кнопка сейчас просто нажата. Для определения клика мы
     // сначала понимаем, отпущена ли кнопка прямо сейчас...
 
-    bool buttonIsUp = digitalRead(m_buttonPort, m_buttonPin);
+    bool buttonIsUp = buttonIsNotPressed(m_buttonPort, m_buttonPin);
     // ...если «кнопка была отпущена и (&&) не отпущена сейчас»...
     if (m_buttonWasUp && !buttonIsUp)
     {
@@ -116,7 +81,7 @@ void Button::update(int dtInMs)
         // поэтому даём кнопке полностью «успокоиться»...
         HAL_Delay(10);
         // ...и считываем сигнал снова
-        buttonIsUp = digitalRead(m_buttonPort, m_buttonPin);
+        buttonIsUp = buttonIsNotPressed(m_buttonPort, m_buttonPin);
 
         // если она всё ещё нажата...
         if (!buttonIsUp)
@@ -131,7 +96,7 @@ void Button::update(int dtInMs)
     else if (!m_buttonWasUp && buttonIsUp)
     {
         HAL_Delay(10);
-        buttonIsUp = digitalRead(m_buttonPort, m_buttonPin);
+        buttonIsUp = buttonIsNotPressed(m_buttonPort, m_buttonPin);
 
         if (buttonIsUp && m_onRelease != nullptr)
         {

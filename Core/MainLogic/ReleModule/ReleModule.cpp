@@ -74,7 +74,7 @@ bool ReleModule::setDesiredTemperature(int16_t temp)
         // temp = fn::fitInRange(temp,constants::tempMin, constants::tempMax);
     }
 
-    debug("set desired temp: %d", temp);
+    info("set desired temp: %d", temp);
 
     m_desTemp = temp;
     m_desiredTempChangeApplied = true;
@@ -88,6 +88,11 @@ bool ReleModule::setDesiredTemperature(int16_t temp)
 int16_t ReleModule::getCurrentTemperature() const
 {
     return m_currTemp;
+}
+
+bool ReleModule::isTempSensorWorking() const
+{
+    return m_tempReader.isWorking();
 }
 
 int16_t ReleModule::getDesiredTemperatire() const

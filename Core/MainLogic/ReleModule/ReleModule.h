@@ -33,6 +33,8 @@ public:
 
     int16_t getCurrentTemperature() const;
 
+    bool isTempSensorWorking() const;
+
     bool setDesiredTemperature(int16_t temp);
 
     int16_t getDesiredTemperatire() const;

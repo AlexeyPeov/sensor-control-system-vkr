@@ -10,6 +10,29 @@ static uint8_t* recBufferPtr = nullptr;
 
 Network::Network() { }
 
+const std::string& Network::msgToString(MsgTypeSend msg)
+{
+    static const std::string messages[6]
+    {
+        "[DEBUG] ",
+        "[INFO] ",
+        "[WARN]",
+        "[ERROR]",
+        "[OK]",
+        "[FAIL]",
+    };
+
+    int i = static_cast<int>(msg);
+
+    if(i >= 6)
+    {
+        error("Network::msgToString out of bounds, msgId: %d", msg);
+        return messages[5];
+    }
+
+    return messages[i];
+}
+
 Network& Network::instance()
 {
     static Network network;
@@ -100,10 +123,12 @@ void Network::sendMessage(MsgTypeSend msgT, const char* format, ...)
     va_list args;
     va_start(args, format);
 
-    vsnprintf(buffer + 1, bufferSize - 2, format, args);
+    const std::string& msgHeader = msgToString(msgT);
+
+    vsnprintf(buffer + msgHeader.size(), bufferSize - 2, format, args);
     va_end(args);
 
-    buffer[0] = static_cast<char>(msgT);
+    memcpy(buffer,msgHeader.c_str(),msgHeader.size());
 
     size_t len = strlen(buffer);
     if (len < bufferSize - 1)

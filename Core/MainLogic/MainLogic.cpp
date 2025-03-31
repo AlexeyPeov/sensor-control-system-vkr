@@ -184,16 +184,28 @@ void MainLogic::onUartMessage(
     }
     else if (type == Network::MsgTypeReceive::GET_CURR_TEMPERATURE)
     {
-        Network::sendMessage(
-            Network::MsgTypeSend::CURR_TEMPERATURE,
-            "%d %d",
-            m_releModules[moduleId].getCurrentTemperature()
-        );
+        if(m_releModules[moduleId].isTempSensorWorking())
+        {
+            Network::sendMessage(
+                Network::MsgTypeSend::RESULT_OK,
+                "%d %d",
+                m_releModules[moduleId].getCurrentTemperature()
+            );
+        }
+        else
+        {
+            Network::sendMessage(
+                Network::MsgTypeSend::RESULT_FAIL,
+                "%d %d",
+                "Temp sensor not working.."
+            );
+        }
+
     }
     else if (type == Network::MsgTypeReceive::GET_DESIRED_TEMPERATURE)
     {
         Network::sendMessage(
-            Network::MsgTypeSend::DESIRED_TEMPERATURE,
+            Network::MsgTypeSend::RESULT_OK,
             "%d %d",
             m_releModules[moduleId].getDesiredTemperatire()
         );
@@ -236,7 +248,7 @@ void MainLogic::onUartMessage(
     else if (type == Network::MsgTypeReceive::GET_IS_REFRIGERATOR_ON)
     {
         Network::sendMessage(
-            Network::MsgTypeSend::IS_REFRIGERATOR_ON,
+            Network::MsgTypeSend::RESULT_OK,
             "%d",
             m_releModules[moduleId].getRefrigerator().isOn()
         );

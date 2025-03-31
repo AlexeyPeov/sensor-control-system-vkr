@@ -26,4 +26,7 @@
 #define error(format, ...)                                                     \
     Network::sendMessage(Network::MsgTypeSend::LOG_ERROR, format, ##__VA_ARGS__)
 
+#define info(format, ...)                                                     \
+    Network::sendMessage(Network::MsgTypeSend::LOG_INFO, format, ##__VA_ARGS__)
+
 #endif /* MAINLOGIC_PRINT_PRINT_H_ */
