@@ -1,10 +1,12 @@
 #ifndef DS18B20_HPP
 #define DS18B20_HPP
 
+#include <optional>
+
+#include <stdint.h>
+
 #include "stm32f1xx_hal.h"
 #include "stm32f103xb.h"
-#include <stdint.h>
-#include <optional>
 
 class DS18B20
 {

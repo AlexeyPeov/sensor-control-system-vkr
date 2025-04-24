@@ -295,8 +295,7 @@ void MainLogic::updateDisplay(const ReleModule& info)
             m_displayLine1.size(),
             "id%d t:%dc  chsn",
             m_currReleId,
-            info.getCurrentTemperature(),
-            info.getRefrigerator().isOn()
+            info.getCurrentTemperature()
         );
     }
 
