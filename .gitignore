@@ -2,3 +2,7 @@ Debug
 putty.exe
 .vs*
 hercules*
+Release
+.metadata
+.settings
+experimental

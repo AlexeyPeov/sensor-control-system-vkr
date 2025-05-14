@@ -52,14 +52,14 @@ private:
 
     void onTemperatureMeasured(int16_t t);
 
-    void updateRefrigerator(bool useThreshold = true);
+    void updateRefrigeratorState(bool useThreshold = true);
 
 private:
     TemperatureReader m_tempReader;
     Refrigerator m_refrigerator;
 
     int16_t m_currTemp = -1;
-    int16_t m_desTemp = 0;
+    int16_t m_desiredTemp = 0;
     int16_t m_desTempPending = 0;
 
 

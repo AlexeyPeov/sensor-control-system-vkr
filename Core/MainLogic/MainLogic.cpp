@@ -9,37 +9,12 @@
 #include "fn/fn.h"
 
 MainLogic::MainLogic()
-    : m_displayLine1("Current temp: 15c"), m_displayLine2("Desir   temp: 15c"),
+    : m_displayLine1("Current temp: 15c"),
+      m_displayLine2("Desir   temp: 15c"),
       m_button(Button_GPIO_Port, Button_Pin),
-      m_currModuleTemp(
-          -1,
-          [this](int16_t t)
-          {
-              updateDisplay(m_releModules[m_currReleId]);
-          }
-      ),
-      m_potentiometerValueSwitchingReles(
-          -1,
-          [this](int16_t releId)
-          {
-              m_currReleId = fn::fitInRange<uint8_t>(
-                  releId,
-                  0,
-                  m_numSensors - 1
-              );
-
-              updateDisplay(m_releModules[m_currReleId]);
-          }
-      ),
-      m_potentiometerValueChangingTemp(
-          -1,
-          [this](int16_t newDesiredTemp)
-          {
-              m_releModules[m_currReleId].setPendingTemp(newDesiredTemp);
-
-              updateDisplay(m_releModules[m_currReleId]);
-          }
-      )
+      m_currModuleTemp(-1),
+      m_potentiometerValueSwitchingReles(-1),
+      m_potentiometerValueChangingTemp(-1)
 
 {
 
@@ -48,7 +23,9 @@ MainLogic::MainLogic()
         GPIO_TypeDef* letter;
         uint16_t pinId;
 
-        PinInfo(GPIO_TypeDef* info, uint16_t id) : letter(info), pinId(id)
+        PinInfo(GPIO_TypeDef* info, uint16_t id)
+            : letter(info),
+              pinId(id)
         {
         }
     };
@@ -120,13 +97,21 @@ void MainLogic::update(int dtInMs)
             return;
         }
 
-        m_potentiometerValueSwitchingReles.setValue(value);
+        if (m_potentiometerValueSwitchingReles.setValue(value))
+        {
+            m_currReleId = fn::fitInRange<uint8_t>(value, 0, m_numSensors - 1);
 
-        m_currModuleTemp.setValue(
+            updateDisplay(m_releModules[m_currReleId]);
+        }
+
+        bool changed = m_currModuleTemp.setValue(
             m_releModules[m_currReleId].getCurrentTemperature()
         );
 
-        m_potentiometerValueSwitchingReles.setValue(value);
+        if (changed)
+        {
+            updateDisplay(m_releModules[m_currReleId]);
+        }
     }
     else if (m_state == State::CHANGING_DESIRED_TEMPERATURE)
     {
@@ -141,7 +126,12 @@ void MainLogic::update(int dtInMs)
             return;
         }
 
-        m_potentiometerValueChangingTemp.setValue(value);
+        if (m_potentiometerValueChangingTemp.setValue(value))
+        {
+            m_releModules[m_currReleId].setPendingTemp(value);
+
+            updateDisplay(m_releModules[m_currReleId]);
+        }
     }
 }
 
@@ -169,7 +159,7 @@ void MainLogic::onUartMessage(
 
         auto msg = fn::castToStruct<TemperatureMessage>(data + 1, size - 1);
 
-        auto& rele = m_releModules[moduleId];
+        ReleModule& rele = m_releModules[moduleId];
 
         bool success = rele.setDesiredTemperature(msg.desiredTemp);
 
@@ -184,7 +174,7 @@ void MainLogic::onUartMessage(
     }
     else if (type == Network::MsgTypeReceive::GET_CURR_TEMPERATURE)
     {
-        if(m_releModules[moduleId].isTempSensorWorking())
+        if (m_releModules[moduleId].isTempSensorWorking())
         {
             Network::sendMessage(
                 Network::MsgTypeSend::RESULT_OK,
@@ -200,7 +190,6 @@ void MainLogic::onUartMessage(
                 "Temp sensor not working.."
             );
         }
-
     }
     else if (type == Network::MsgTypeReceive::GET_DESIRED_TEMPERATURE)
     {
@@ -277,7 +266,7 @@ void MainLogic::updateDisplay(const ReleModule& info)
 {
     debug("update display, releId: %d", m_currReleId);
 
-    if(m_state == State::CHANGING_DESIRED_TEMPERATURE)
+    if (m_state == State::CHANGING_DESIRED_TEMPERATURE)
     {
         snprintf(
             &m_displayLine1[0],

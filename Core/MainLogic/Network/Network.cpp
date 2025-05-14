@@ -130,15 +130,18 @@ void Network::sendMessage(MsgTypeSend msgT, const char* format, ...)
 
     memcpy(buffer,msgHeader.c_str(),msgHeader.size());
 
+    buffer[bufferSize-1] = '\0';
+
     size_t len = strlen(buffer);
+    
     if (len < bufferSize - 1)
     {
         buffer[len] = '\n';
-        buffer[len + 1] = '\0';
+        buffer[len + 1] = '\0';        
     }
 
     HAL_UART_Transmit(
-        &huart1,
+        &huart1, /*UART_HandleTypeDef*/
         reinterpret_cast<uint8_t*>(buffer),
         strlen(buffer),
         HAL_MAX_DELAY

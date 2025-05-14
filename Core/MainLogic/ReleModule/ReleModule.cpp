@@ -16,18 +16,13 @@ ReleModule::ReleModule(TemperatureReader tmpReader, Refrigerator refrigerator)
 }
 
 void ReleModule::update(int dtInMs)
-{
-    
+{    
     m_tempReader.update(dtInMs);
-    // debug("ReleModule::update tmprdr");
     m_refrigerator.update(dtInMs);
-    // debug("ReleModule::update rfrg");
 
-    updateRefrigerator();
+    updateRefrigeratorState();
     
     m_currTemp = m_tempReader.getLastMeasuredTemperature();
-
-    // debug("ReleModule::update end");
 }
 
 void ReleModule::setPendingTemp(int16_t desiredTemp)
@@ -43,7 +38,7 @@ void ReleModule::setPendingTemp(int16_t desiredTemp)
 
     m_desiredTempChangeApplied = false;
 
-    if (m_desTempPending == m_desTemp)
+    if (m_desTempPending == m_desiredTemp)
     {
         m_desiredTempChangeApplied = true;
     }
@@ -56,7 +51,7 @@ bool ReleModule::applyPendingTemp()
 
 bool ReleModule::setDesiredTemperature(int16_t temp)
 {
-    if (m_desTemp == temp)
+    if (m_desiredTemp == temp)
     {
         return true;
     }
@@ -76,11 +71,11 @@ bool ReleModule::setDesiredTemperature(int16_t temp)
 
     info("set desired temp: %d", temp);
 
-    m_desTemp = temp;
+    m_desiredTemp = temp;
     m_desiredTempChangeApplied = true;
 
     // updateDisplay();
-    updateRefrigerator(false);
+    updateRefrigeratorState(false);
 
     return true;
 }
@@ -97,7 +92,7 @@ bool ReleModule::isTempSensorWorking() const
 
 int16_t ReleModule::getDesiredTemperatire() const
 {
-    return m_desTemp;
+    return m_desiredTemp;
 }
 
 int16_t ReleModule::getDesiredTemperatirePending() const
@@ -131,14 +126,14 @@ void ReleModule::onTemperatureMeasured(int16_t t)
     m_currTemp = t;
 }
 
-void ReleModule::updateRefrigerator(bool useThreshold)
+void ReleModule::updateRefrigeratorState(bool useThreshold)
 {
     if (m_refrigerator.isManualControl())
     {
         return;
     }
 
-    int16_t desTemp = m_desTemp;
+    int16_t desTemp = m_desiredTemp;
 
     if (useThreshold)
     {
@@ -149,8 +144,7 @@ void ReleModule::updateRefrigerator(bool useThreshold)
     {
         m_refrigerator.setOn();
     }
-
-    if (m_currTemp < m_desTemp && m_refrigerator.isOn())
+    else if (m_currTemp < m_desiredTemp && m_refrigerator.isOn())
     {
         m_refrigerator.setOff();
     }

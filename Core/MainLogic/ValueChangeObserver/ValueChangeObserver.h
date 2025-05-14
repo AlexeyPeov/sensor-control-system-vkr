@@ -5,47 +5,32 @@
 
 #include "../print/print.h"
 
-template <typename T> class ValueChangeObserver
+template <typename T>
+class ValueChangeObserver
 {
 public:
     ValueChangeObserver() = default;
 
-    template <typename U>
-    ValueChangeObserver(
-        U&& defaultValue,
-        std::function<void(const T&)> cbOnChange
-    )
-        : m_prevValue(std::forward<U>(defaultValue)),
-          m_currentValue(m_prevValue), m_cbOnChange(std::move(cbOnChange))
+    ValueChangeObserver(T&& defaultValue)
+        : m_currentValue(std::forward<T>(defaultValue))
     {
     }
 
-    template <typename U> void setValue(U&& value)
+    bool setValue(const T& value)
     {
         if (value != m_currentValue)
         {
-            m_prevValue = std::move(m_currentValue);
-            m_currentValue = std::forward<U>(value);
-
-            if (m_cbOnChange)
-            {
-                m_cbOnChange(m_currentValue);
-            }
+            m_currentValue = value;
+            return true;
         }
-    }
 
-    const T& getPrevValue() const
-    {
-        return m_prevValue;
+        return false;
     }
-
-    const T& getCurrValue() const
+    const T& getValue() const
     {
         return m_currentValue;
     }
 
 private:
-    T m_prevValue;
     T m_currentValue;
-    std::function<void(const T&)> m_cbOnChange = nullptr;
 };
