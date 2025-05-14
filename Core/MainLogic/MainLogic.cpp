@@ -242,6 +242,9 @@ void MainLogic::onUartMessage(
             m_releModules[moduleId].getRefrigerator().isOn()
         );
     }
+
+    updateDisplay(m_releModules[moduleId]);
+        
 }
 
 void MainLogic::onButtonPressed()

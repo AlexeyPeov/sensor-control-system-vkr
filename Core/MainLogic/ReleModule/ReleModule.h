@@ -13,7 +13,7 @@ public:
     struct constants
     {
         static constexpr int16_t tempMin = 10;
-        static constexpr int16_t tempMax = 35;
+        static constexpr int16_t tempMax = 28;
         static constexpr int16_t initialDesiredTemp = 25;
         static constexpr int16_t refrigerantInitThresholdDeg = 2;
         
