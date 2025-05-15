@@ -263,6 +263,8 @@ void MainLogic::onButtonPressed()
 
         m_state = State::SWITCHING_RELE;
     }
+
+    updateDisplay(m_releModules[m_currReleId]);
 }
 
 void MainLogic::updateDisplay(const ReleModule& info)
