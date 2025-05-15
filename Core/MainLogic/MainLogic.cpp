@@ -178,7 +178,7 @@ void MainLogic::onUartMessage(
         {
             Network::sendMessage(
                 Network::MsgTypeSend::RESULT_OK,
-                "%d %d",
+                "%d",
                 m_releModules[moduleId].getCurrentTemperature()
             );
         }
@@ -186,7 +186,7 @@ void MainLogic::onUartMessage(
         {
             Network::sendMessage(
                 Network::MsgTypeSend::RESULT_FAIL,
-                "%d %d",
+                "",
                 "Temp sensor not working.."
             );
         }
@@ -195,7 +195,7 @@ void MainLogic::onUartMessage(
     {
         Network::sendMessage(
             Network::MsgTypeSend::RESULT_OK,
-            "%d %d",
+            "%d",
             m_releModules[moduleId].getDesiredTemperatire()
         );
     }
