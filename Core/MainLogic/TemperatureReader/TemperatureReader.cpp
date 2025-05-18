@@ -15,11 +15,9 @@ TemperatureReader::TemperatureReader() : m_sensor(nullptr, 0)
 TemperatureReader::TemperatureReader(
     GPIO_TypeDef* GPIO_PIN_LETTER,
     uint16_t GPIO_PIN_ID,
-    int tempMeasureDelayInMs,
-    std::function<void(int16_t t)> onTempMeasuredCb
+    int tempMeasureDelayInMs
 )
-    : m_sensor(GPIO_PIN_LETTER, GPIO_PIN_ID),
-      m_onTempMeasuredCb(std::move(onTempMeasuredCb))
+    : m_sensor(GPIO_PIN_LETTER, GPIO_PIN_ID)
 {
 
     setTempMeasureDelay(tempMeasureDelayInMs);
@@ -80,10 +78,6 @@ void TemperatureReader::update(int dtInMs)
 
         if (temp)
         {
-            if (m_onTempMeasuredCb)
-            {
-                m_onTempMeasuredCb(*temp);
-            }
             
             m_lastMeasuredTemperature = *temp;
         }
@@ -102,12 +96,6 @@ void TemperatureReader::setTempMeasureDelay(int delayInMs)
     m_delayTriggerTime = fn::max(800, delayInMs);
 }
 
-void TemperatureReader::setOnTempMeasuredCb(
-    std::function<void(int16_t t)> onTempMeasuredCb
-)
-{
-    m_onTempMeasuredCb = std::move(onTempMeasuredCb);
-}
 
 int16_t TemperatureReader::getLastMeasuredTemperature() const
 {
