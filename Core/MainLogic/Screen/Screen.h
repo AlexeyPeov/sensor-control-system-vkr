@@ -12,13 +12,19 @@
 
 #include "screen_i2c/liquidcrystal_i2c.h"
 
-namespace Screen
+class Screen
 {
-	void init(I2C_HandleTypeDef* hi2c1);
+public:
+	static void init(I2C_HandleTypeDef* hi2c1);
 
-	void clear();
+private:
 
-	void print(uint8_t row, uint8_t column, const std::string& data);
+	friend class MainLogic;
+
+private:
+	static void clear();
+
+	static void print(uint8_t row, uint8_t column, const std::string& data);
 }
 
 
