@@ -74,7 +74,6 @@ bool ReleModule::setDesiredTemperature(int16_t temp)
     m_desiredTemp = temp;
     m_desiredTempChangeApplied = true;
 
-    // updateDisplay();
     updateRefrigeratorState(false);
 
     return true;
