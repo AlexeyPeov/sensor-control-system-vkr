@@ -13,9 +13,9 @@ public:
     struct constants
     {
         static constexpr int16_t tempMin = 10;
-        static constexpr int16_t tempMax = 28;
+        static constexpr int16_t tempMax = 32;
         static constexpr int16_t initialDesiredTemp = 25;
-        static constexpr int16_t refrigerantInitThresholdDeg = 2;
+        static constexpr int16_t refrigerantInitThresholdDeg = 1;
         
     };
 public:
@@ -31,7 +31,7 @@ public:
 
     bool isDesiredTempApplied() const;    
 
-    int16_t getCurrentTemperature() const;
+    float getCurrentTemperature() const;
 
     bool isTempSensorWorking() const;
 
@@ -49,16 +49,13 @@ public:
     void disableManualControl();
 
 private:
-
-    void onTemperatureMeasured(int16_t t);
-
     void updateRefrigeratorState(bool useThreshold = true);
 
 private:
     TemperatureReader m_tempReader;
     Refrigerator m_refrigerator;
 
-    int16_t m_currTemp = -1;
+    float m_currTemp = -1;
     int16_t m_desiredTemp = 0;
     int16_t m_desTempPending = 0;
 

@@ -25,7 +25,7 @@ private:
 	static void clear();
 
 	static void print(uint8_t row, uint8_t column, const std::string& data);
-}
+};
 
 
 #endif /* MAINLOGIC_SCREEN_H_ */

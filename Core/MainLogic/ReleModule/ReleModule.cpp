@@ -79,7 +79,7 @@ bool ReleModule::setDesiredTemperature(int16_t temp)
     return true;
 }
 
-int16_t ReleModule::getCurrentTemperature() const
+float ReleModule::getCurrentTemperature() const
 {
     return m_currTemp;
 }
@@ -119,11 +119,6 @@ bool ReleModule::isDesiredTempApplied() const
     return m_desiredTempChangeApplied;
 }
 
-void ReleModule::onTemperatureMeasured(int16_t t)
-{
-    debug("onTemp measured: %d", t);
-    m_currTemp = t;
-}
 
 void ReleModule::updateRefrigeratorState(bool useThreshold)
 {

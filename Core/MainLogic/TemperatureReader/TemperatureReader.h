@@ -20,7 +20,7 @@ public:
 
     void setTempMeasureDelay(int delayInMs);
 
-    int16_t getLastMeasuredTemperature() const;
+    float getLastMeasuredTemperature() const;
 
     bool isWorking() const;
 
@@ -40,7 +40,7 @@ private:
     uint16_t m_delayTriggerTime = 0;
 
     State m_state = State::NONE;
-    int16_t m_lastMeasuredTemperature = 25;
+    float m_lastMeasuredTemperature = 25;
 
     DS18B20 m_sensor;    
 };

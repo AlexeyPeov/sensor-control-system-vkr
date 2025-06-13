@@ -10,7 +10,7 @@
 
 #include "../Network/Network.h"
 
-#define DEBUG_PRINT
+// #define DEBUG_PRINT
 
 #ifdef DEBUG_PRINT
 
@@ -26,7 +26,7 @@
 #define error(format, ...)                                                     \
     Network::sendMessage(Network::MsgTypeSend::LOG_ERROR, format, ##__VA_ARGS__)
 
-#define info(format, ...)                                                     \
+#define info(format, ...)                                                  \
     Network::sendMessage(Network::MsgTypeSend::LOG_INFO, format, ##__VA_ARGS__)
 
 #endif /* MAINLOGIC_PRINT_PRINT_H_ */

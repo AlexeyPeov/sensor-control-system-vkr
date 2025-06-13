@@ -97,7 +97,7 @@ void TemperatureReader::setTempMeasureDelay(int delayInMs)
 }
 
 
-int16_t TemperatureReader::getLastMeasuredTemperature() const
+float TemperatureReader::getLastMeasuredTemperature() const
 {
     return m_lastMeasuredTemperature;
 }

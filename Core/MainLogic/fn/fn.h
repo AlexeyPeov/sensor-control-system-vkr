@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <utility>  // For std::pair
+
 
 namespace fn
 {
@@ -15,6 +17,14 @@ namespace fn
     inline bool isInRange(int val, int a, int b)
     {
         return (val >= a && val <= b);
+    }
+    
+    inline std::pair<int16_t, int16_t> splitFloat(float value) 
+    {
+        int16_t whole = static_cast<int16_t>(value);
+        int16_t decimal = static_cast<int16_t>((value - whole) * 10);
+
+        return {whole, decimal};
     }
     
 

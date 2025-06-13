@@ -176,10 +176,15 @@ void MainLogic::onUartMessage(
     {
         if (m_releModules[moduleId].isTempSensorWorking())
         {
+            auto temp = fn::splitFloat(
+                m_releModules[moduleId].getCurrentTemperature()
+            );
+
             Network::sendMessage(
                 Network::MsgTypeSend::RESULT_OK,
-                "%d",
-                m_releModules[moduleId].getCurrentTemperature()
+                "%d.%d",
+                temp.first,
+                temp.second
             );
         }
         else
@@ -244,13 +249,10 @@ void MainLogic::onUartMessage(
     }
 
     updateDisplay(m_releModules[moduleId]);
-        
 }
 
 void MainLogic::onButtonPressed()
 {
-    // int16_t potentiometerValue = m_potentiometer.getValue();
-
     debug("onBtnPressed, state:%d", m_state);
 
     if (m_state == State::SWITCHING_RELE)
@@ -269,16 +271,16 @@ void MainLogic::onButtonPressed()
 
 void MainLogic::updateDisplay(const ReleModule& info)
 {
-    debug("update display, releId: %d", m_currReleId);
-
+    auto currTemp = fn::splitFloat(info.getCurrentTemperature());
     if (m_state == State::CHANGING_DESIRED_TEMPERATURE)
     {
         snprintf(
             &m_displayLine1[0],
             m_displayLine1.size(),
-            "id%d t:%dc  on:%d",
+            "id%d t:%d.%d  on:%d",
             m_currReleId,
-            info.getCurrentTemperature(),
+            currTemp.first,
+            currTemp.second,
             info.getRefrigerator().isOn()
         );
     }
@@ -287,9 +289,10 @@ void MainLogic::updateDisplay(const ReleModule& info)
         snprintf(
             &m_displayLine1[0],
             m_displayLine1.size(),
-            "id%d t:%dc  chsn",
+            "id%d t:%d.%d  chsn",
             m_currReleId,
-            info.getCurrentTemperature()
+            currTemp.first,
+            currTemp.second
         );
     }
 
@@ -299,7 +302,7 @@ void MainLogic::updateDisplay(const ReleModule& info)
         snprintf(
             &m_displayLine2[0],
             m_displayLine2.size(),
-            "trg t:%dc        ",
+            "trg t:%dc          ",
             info.getDesiredTemperatire()
         );
     }
@@ -308,13 +311,12 @@ void MainLogic::updateDisplay(const ReleModule& info)
         snprintf(
             &m_displayLine2[0],
             m_displayLine2.size(),
-            "trg t:%dc, *%dc ",
+            "trg t:%dc, *%dc    ",
             info.getDesiredTemperatire(),
             info.getDesiredTemperatirePending()
         );
     }
 
-    // Screen::clear();
     Screen::print(0, 0, m_displayLine1.c_str());
     Screen::print(0, 1, m_displayLine2.c_str());
 }

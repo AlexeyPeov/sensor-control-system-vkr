@@ -151,7 +151,7 @@ std::optional<float> DS18B20::readCelciusEnd()
 
 	uint16_t temp_com = (temp2 << 8) | temp1;
 
-	float tempRet = (float)(temp_com / 16.0);
+	float tempRet = static_cast<float>(temp_com) / 16.0f;
 
 	if(!fn::isInRange(tempRet, 10, 50))
 	{
